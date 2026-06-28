@@ -1,0 +1,789 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>ESP32-S3 Cruise Converter</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #090b0f;
+      --panel: #121722;
+      --panel-2: #171e2b;
+      --line: #2b3546;
+      --text: #eef3fb;
+      --muted: #aab6c8;
+      --dim: #758398;
+      --accent: #22d3ee;
+      --accent-2: #f59e0b;
+      --danger: #ef4444;
+      --ok: #22c55e;
+      --off: #465264;
+      --radius: 8px;
+      --shadow: 0 16px 40px rgba(0, 0, 0, .28);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 18px;
+      line-height: 1.45;
+    }
+
+    button,
+    input,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      min-height: 48px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #202a3a;
+      color: var(--text);
+      padding: 12px 14px;
+      font-weight: 750;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    button.primary {
+      border-color: rgba(34, 211, 238, .65);
+      background: #0e7490;
+      color: #f8fdff;
+    }
+
+    button.warn {
+      border-color: rgba(245, 158, 11, .75);
+      background: #8a4d09;
+    }
+
+    button.danger {
+      border-color: rgba(239, 68, 68, .75);
+      background: #8d1f1f;
+    }
+
+    input[type="number"],
+    textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #0d121b;
+      color: var(--text);
+      padding: 12px;
+      min-height: 48px;
+    }
+
+    textarea {
+      min-height: 220px;
+      resize: vertical;
+      font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+      font-size: 14px;
+      line-height: 1.5;
+      white-space: pre;
+    }
+
+    .app {
+      width: min(980px, 100%);
+      margin: 0 auto;
+      padding: calc(14px + env(safe-area-inset-top)) 14px calc(24px + env(safe-area-inset-bottom));
+    }
+
+    header {
+      display: grid;
+      gap: 4px;
+      padding: 4px 2px 14px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(25px, 7vw, 38px);
+      letter-spacing: 0;
+      line-height: 1.05;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .tabs {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      padding: 8px 0 12px;
+      background: rgba(9, 11, 15, .94);
+      backdrop-filter: blur(12px);
+    }
+
+    .tab-button {
+      min-height: 52px;
+      padding: 8px 4px;
+      color: var(--muted);
+      background: #111721;
+    }
+
+    .tab-button.active {
+      color: #031013;
+      border-color: var(--accent);
+      background: var(--accent);
+    }
+
+    main {
+      display: grid;
+      gap: 14px;
+    }
+
+    .view {
+      display: none;
+      gap: 14px;
+    }
+
+    .view.active {
+      display: grid;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      padding: 14px;
+    }
+
+    .panel h2,
+    .panel h3 {
+      margin: 0 0 12px;
+      letter-spacing: 0;
+    }
+
+    .panel h2 {
+      font-size: 21px;
+    }
+
+    .panel h3 {
+      color: var(--muted);
+      font-size: 16px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .grid {
+      display: grid;
+      gap: 10px;
+    }
+
+    .grid.two {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .metric {
+      display: grid;
+      min-height: 86px;
+      align-content: space-between;
+      gap: 8px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel-2);
+      padding: 12px;
+    }
+
+    .label {
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .value {
+      overflow-wrap: anywhere;
+      font-size: 26px;
+      font-weight: 850;
+      line-height: 1.1;
+    }
+
+    .value.small {
+      font-size: 20px;
+    }
+
+    .status-pill {
+      display: inline-grid;
+      place-items: center;
+      width: fit-content;
+      min-width: 70px;
+      min-height: 34px;
+      border-radius: 999px;
+      padding: 5px 11px;
+      background: var(--off);
+      color: #dce5f2;
+      font-size: 16px;
+      font-weight: 850;
+    }
+
+    .status-pill.on {
+      background: var(--ok);
+      color: #04130a;
+    }
+
+    .status-pill.warn {
+      background: var(--accent-2);
+      color: #1b1000;
+    }
+
+    .learn-row,
+    .timing-row {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+      border-top: 1px solid var(--line);
+      padding: 12px 0;
+    }
+
+    .learn-row:first-child,
+    .timing-row:first-child {
+      border-top: 0;
+      padding-top: 0;
+    }
+
+    .learn-name,
+    .timing-name {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-weight: 800;
+    }
+
+    .learn-value {
+      color: var(--accent);
+      font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+      font-size: 18px;
+    }
+
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+
+    .message {
+      min-height: 26px;
+      color: var(--accent);
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .json-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .file-input {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+    }
+
+    @media (min-width: 720px) {
+      .app {
+        padding-inline: 22px;
+      }
+
+      .dashboard {
+        grid-template-columns: 1.2fr .8fr;
+      }
+
+      .grid.three {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .learn-row,
+      .timing-row {
+        grid-template-columns: 1fr 220px;
+        align-items: center;
+      }
+
+      .actions {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>Cruise Converter</h1>
+      <div class="subtitle">ESP32-S3 AP/Web UI Prototype</div>
+    </header>
+
+    <nav class="tabs" aria-label="画面切り替え">
+      <button class="tab-button active" data-tab="monitor" type="button">Monitor</button>
+      <button class="tab-button" data-tab="learn" type="button">Learn</button>
+      <button class="tab-button" data-tab="cruise" type="button">Cruise</button>
+      <button class="tab-button" data-tab="system" type="button">System</button>
+    </nav>
+
+    <main>
+      <section id="monitor" class="view active">
+        <div class="grid dashboard">
+          <div class="panel">
+            <h2>Live Status</h2>
+            <div class="grid two">
+              <div class="metric">
+                <div class="label">ADC現在値</div>
+                <div id="statusAdc" class="value">0</div>
+              </div>
+              <div class="metric">
+                <div class="label">判定中ボタン名</div>
+                <div id="statusButton" class="value small">None</div>
+              </div>
+              <div class="metric">
+                <div class="label">Vin</div>
+                <div id="statusVin" class="value">0.0 V</div>
+              </div>
+              <div class="metric">
+                <div class="label">Vout</div>
+                <div id="statusVout" class="value">0.0 V</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <h2>Input</h2>
+            <div class="metric">
+              <div class="label">Brake入力</div>
+              <div id="statusBrakeIn" class="status-pill">OFF</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>Outputs</h2>
+          <div class="grid two grid three">
+            <div class="metric">
+              <div class="label">Main出力</div>
+              <div id="outMain" class="status-pill">OFF</div>
+            </div>
+            <div class="metric">
+              <div class="label">Up/Set出力</div>
+              <div id="outUpSet" class="status-pill">OFF</div>
+            </div>
+            <div class="metric">
+              <div class="label">Down/Res出力</div>
+              <div id="outDownRes" class="status-pill">OFF</div>
+            </div>
+            <div class="metric">
+              <div class="label">Cancel出力</div>
+              <div id="outCancel" class="status-pill">OFF</div>
+            </div>
+            <div class="metric">
+              <div class="label">Brake疑似出力</div>
+              <div id="outBrake" class="status-pill">OFF</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="learn" class="view">
+        <div class="panel">
+          <h2>Current ADC</h2>
+          <div class="metric">
+            <div class="label">現在ADC値</div>
+            <div id="learnAdc" class="value">0</div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>R Button</h2>
+          <div id="learnR"></div>
+        </div>
+
+        <div class="panel">
+          <h2>L Button</h2>
+          <div id="learnL"></div>
+        </div>
+
+        <div class="panel">
+          <h2>登録値一覧</h2>
+          <div id="learnedList" class="grid two"></div>
+          <div class="actions" style="margin-top: 14px;">
+            <button id="saveLearn" class="primary" type="button">保存</button>
+          </div>
+          <div id="learnMessage" class="message"></div>
+        </div>
+      </section>
+
+      <section id="cruise" class="view">
+        <div class="panel">
+          <h2>Timing</h2>
+          <div id="timingForm"></div>
+          <div class="actions" style="margin-top: 14px;">
+            <button id="saveTiming" class="primary" type="button">保存</button>
+          </div>
+          <div id="timingMessage" class="message"></div>
+        </div>
+      </section>
+
+      <section id="system" class="view">
+        <div class="panel">
+          <h2>Device</h2>
+          <div class="grid two">
+            <div class="metric">
+              <div class="label">Wi-Fi SSID</div>
+              <div id="wifiSsid" class="value small">CruiseConv-S3</div>
+            </div>
+            <div class="metric">
+              <div class="label">IP</div>
+              <div id="ipAddress" class="value small">192.168.4.1</div>
+            </div>
+            <div class="metric">
+              <div class="label">Firmware Version</div>
+              <div id="firmwareVersion" class="value small">0.1.0-ui</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>設定JSON</h2>
+          <textarea id="configJson" spellcheck="false"></textarea>
+          <div class="json-actions">
+            <button id="exportConfig" type="button">エクスポート</button>
+            <button id="importConfig" type="button">インポート</button>
+            <button id="applyJson" class="primary" type="button">JSONを反映</button>
+            <button id="resetConfig" class="danger" type="button">初期化</button>
+          </div>
+          <input id="importFile" class="file-input" type="file" accept="application/json,.json">
+          <div id="systemMessage" class="message"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const STORAGE_KEY = "cruiseConverterConfig.v1";
+
+    const defaultConfig = {
+      learned: {
+        rMain: 900,
+        rCancel: 1350,
+        rUpSet: 1800,
+        rDownRes: 2250,
+        lVolUp: 650,
+        lVolDown: 1100,
+        lSeekPlus: 1550,
+        lSeekMinus: 2000,
+        lMode: 2450
+      },
+      timing: {
+        mainHoldMs: 700,
+        cancelMs: 180,
+        upSetMs: 160,
+        downResMs: 160,
+        brakeOutMs: 250
+      }
+    };
+
+    const learnGroups = {
+      r: [
+        ["rMain", "Main"],
+        ["rCancel", "Cancel"],
+        ["rUpSet", "Up/Set"],
+        ["rDownRes", "Down/Res"]
+      ],
+      l: [
+        ["lVolUp", "VolUp"],
+        ["lVolDown", "VolDown"],
+        ["lSeekPlus", "Seek+"],
+        ["lSeekMinus", "Seek-"],
+        ["lMode", "Mode"]
+      ]
+    };
+
+    const timingFields = [
+      ["mainHoldMs", "Main長押し時間 ms"],
+      ["cancelMs", "Cancel出力時間 ms"],
+      ["upSetMs", "Up/Set出力時間 ms"],
+      ["downResMs", "Down/Res出力時間 ms"],
+      ["brakeOutMs", "Brake疑似出力時間 ms"]
+    ];
+
+    let config = loadConfig();
+    let currentStatus = makeMockStatus();
+
+    function clone(value) {
+      return JSON.parse(JSON.stringify(value));
+    }
+
+    function loadConfig() {
+      const fallback = clone(defaultConfig);
+      try {
+        const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+        if (!stored) return fallback;
+        return normalizeConfig(stored);
+      } catch {
+        return fallback;
+      }
+    }
+
+    function normalizeConfig(next) {
+      return {
+        learned: { ...defaultConfig.learned, ...(next.learned || {}) },
+        timing: { ...defaultConfig.timing, ...(next.timing || {}) }
+      };
+    }
+
+    async function apiGetStatus() {
+      return makeMockStatus();
+    }
+
+    async function apiSaveConfig(nextConfig) {
+      config = normalizeConfig(nextConfig);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+      return { ok: true };
+    }
+
+    async function apiResetConfig() {
+      await apiSaveConfig(defaultConfig);
+      return { ok: true };
+    }
+
+    function makeMockStatus() {
+      const now = Date.now();
+      const wave = Math.sin(now / 950);
+      const adc = Math.max(0, Math.min(4095, Math.round(1800 + wave * 980 + Math.sin(now / 310) * 120)));
+      const button = detectButton(adc);
+      const pulse = Math.floor(now / 1000) % 8;
+      return {
+        adc,
+        button,
+        vin: Number((12.2 + Math.sin(now / 4500) * 0.35).toFixed(1)),
+        vout: Number((5.0 + Math.sin(now / 2800) * 0.08).toFixed(2)),
+        brakeIn: pulse === 5,
+        outputs: {
+          main: button === "Main",
+          upSet: button === "Up/Set",
+          downRes: button === "Down/Res",
+          cancel: button === "Cancel",
+          brakeOut: pulse === 5 || pulse === 6
+        }
+      };
+    }
+
+    function detectButton(adc) {
+      const labels = [
+        ["Main", config.learned.rMain],
+        ["Cancel", config.learned.rCancel],
+        ["Up/Set", config.learned.rUpSet],
+        ["Down/Res", config.learned.rDownRes],
+        ["VolUp", config.learned.lVolUp],
+        ["VolDown", config.learned.lVolDown],
+        ["Seek+", config.learned.lSeekPlus],
+        ["Seek-", config.learned.lSeekMinus],
+        ["Mode", config.learned.lMode]
+      ];
+      const nearest = labels
+        .map(([name, value]) => ({ name, diff: Math.abs(adc - Number(value)) }))
+        .sort((a, b) => a.diff - b.diff)[0];
+      return nearest && nearest.diff <= 90 ? nearest.name : "None";
+    }
+
+    function setText(id, text) {
+      document.getElementById(id).textContent = text;
+    }
+
+    function setPill(id, isOn) {
+      const el = document.getElementById(id);
+      el.textContent = isOn ? "ON" : "OFF";
+      el.classList.toggle("on", Boolean(isOn));
+    }
+
+    function renderStatus(status) {
+      currentStatus = status;
+      setText("statusAdc", status.adc);
+      setText("statusButton", status.button);
+      setText("statusVin", `${status.vin.toFixed(1)} V`);
+      setText("statusVout", `${status.vout.toFixed(2)} V`);
+      setText("learnAdc", status.adc);
+      setPill("statusBrakeIn", status.brakeIn);
+      setPill("outMain", status.outputs.main);
+      setPill("outUpSet", status.outputs.upSet);
+      setPill("outDownRes", status.outputs.downRes);
+      setPill("outCancel", status.outputs.cancel);
+      setPill("outBrake", status.outputs.brakeOut);
+    }
+
+    function renderLearnRows() {
+      document.getElementById("learnR").innerHTML = learnGroups.r.map(renderLearnRow).join("");
+      document.getElementById("learnL").innerHTML = learnGroups.l.map(renderLearnRow).join("");
+      document.querySelectorAll("[data-learn-key]").forEach((button) => {
+        button.addEventListener("click", () => {
+          const key = button.dataset.learnKey;
+          config.learned[key] = currentStatus.adc;
+          renderLearnRows();
+          renderConfigJson();
+          showMessage("learnMessage", `${button.dataset.learnName} = ${currentStatus.adc}`);
+        });
+      });
+      renderLearnedList();
+    }
+
+    function renderLearnRow([key, name]) {
+      return `
+        <div class="learn-row">
+          <div class="learn-name">
+            <span>${name}</span>
+            <span class="learn-value">${config.learned[key]}</span>
+          </div>
+          <button data-learn-key="${key}" data-learn-name="${name}" type="button">現在値を登録</button>
+        </div>
+      `;
+    }
+
+    function renderLearnedList() {
+      const rows = [...learnGroups.r, ...learnGroups.l].map(([key, name]) => `
+        <div class="metric">
+          <div class="label">${name}</div>
+          <div class="value small">${config.learned[key]}</div>
+        </div>
+      `);
+      document.getElementById("learnedList").innerHTML = rows.join("");
+    }
+
+    function renderTimingForm() {
+      document.getElementById("timingForm").innerHTML = timingFields.map(([key, name]) => `
+        <label class="timing-row">
+          <span class="timing-name">${name}</span>
+          <input data-timing-key="${key}" type="number" inputmode="numeric" min="0" max="10000" step="10" value="${config.timing[key]}">
+        </label>
+      `).join("");
+    }
+
+    function renderConfigJson() {
+      document.getElementById("configJson").value = JSON.stringify(config, null, 2);
+    }
+
+    function renderAll() {
+      renderLearnRows();
+      renderTimingForm();
+      renderConfigJson();
+    }
+
+    function showMessage(id, message) {
+      const el = document.getElementById(id);
+      el.textContent = message;
+      window.clearTimeout(el._timer);
+      el._timer = window.setTimeout(() => {
+        el.textContent = "";
+      }, 2600);
+    }
+
+    function switchTab(tabId) {
+      document.querySelectorAll(".tab-button").forEach((button) => {
+        button.classList.toggle("active", button.dataset.tab === tabId);
+      });
+      document.querySelectorAll(".view").forEach((view) => {
+        view.classList.toggle("active", view.id === tabId);
+      });
+      if (tabId === "system") renderConfigJson();
+    }
+
+    function bindEvents() {
+      document.querySelectorAll(".tab-button").forEach((button) => {
+        button.addEventListener("click", () => switchTab(button.dataset.tab));
+      });
+
+      document.getElementById("saveLearn").addEventListener("click", async () => {
+        await apiSaveConfig(config);
+        renderConfigJson();
+        showMessage("learnMessage", "保存しました");
+      });
+
+      document.getElementById("saveTiming").addEventListener("click", async () => {
+        document.querySelectorAll("[data-timing-key]").forEach((input) => {
+          config.timing[input.dataset.timingKey] = Number(input.value || 0);
+        });
+        await apiSaveConfig(config);
+        renderConfigJson();
+        showMessage("timingMessage", "保存しました");
+      });
+
+      document.getElementById("exportConfig").addEventListener("click", () => {
+        const blob = new Blob([JSON.stringify(config, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "cruise-converter-config.json";
+        link.click();
+        URL.revokeObjectURL(url);
+        showMessage("systemMessage", "エクスポートしました");
+      });
+
+      document.getElementById("importConfig").addEventListener("click", () => {
+        document.getElementById("importFile").click();
+      });
+
+      document.getElementById("importFile").addEventListener("change", async (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+        try {
+          const imported = JSON.parse(await file.text());
+          await apiSaveConfig(imported);
+          renderAll();
+          showMessage("systemMessage", "インポートしました");
+        } catch {
+          showMessage("systemMessage", "JSONを読み込めません");
+        } finally {
+          event.target.value = "";
+        }
+      });
+
+      document.getElementById("applyJson").addEventListener("click", async () => {
+        try {
+          const next = JSON.parse(document.getElementById("configJson").value);
+          await apiSaveConfig(next);
+          renderAll();
+          showMessage("systemMessage", "JSONを反映しました");
+        } catch {
+          showMessage("systemMessage", "JSON形式を確認してください");
+        }
+      });
+
+      document.getElementById("resetConfig").addEventListener("click", async () => {
+        if (!confirm("設定を初期化しますか？")) return;
+        await apiResetConfig();
+        renderAll();
+        showMessage("systemMessage", "初期化しました");
+      });
+    }
+
+    async function startStatusLoop() {
+      renderStatus(await apiGetStatus());
+      window.setInterval(async () => {
+        renderStatus(await apiGetStatus());
+      }, 1000);
+    }
+
+    bindEvents();
+    renderAll();
+    startStatusLoop();
+  </script>
+</body>
+</html>
