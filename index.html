@@ -566,23 +566,20 @@
     }
 
     function makeMockStatus() {
-      const now = Date.now();
-      const wave = Math.sin(now / 950);
-      const adc = Math.max(0, Math.min(4095, Math.round(1800 + wave * 980 + Math.sin(now / 310) * 120)));
+      const adc = 1800;
       const button = detectButton(adc);
-      const pulse = Math.floor(now / 1000) % 8;
       return {
         adc,
         button,
-        vin: Number((12.2 + Math.sin(now / 4500) * 0.35).toFixed(1)),
-        vout: Number((5.0 + Math.sin(now / 2800) * 0.08).toFixed(2)),
-        brakeIn: pulse === 5,
+        vin: 12.2,
+        vout: 5.0,
+        brakeIn: false,
         outputs: {
-          main: button === "Main",
-          upSet: button === "Up/Set",
-          downRes: button === "Down/Res",
-          cancel: button === "Cancel",
-          brakeOut: pulse === 5 || pulse === 6
+          main: false,
+          upSet: false,
+          downRes: false,
+          cancel: false,
+          brakeOut: false
         }
       };
     }
