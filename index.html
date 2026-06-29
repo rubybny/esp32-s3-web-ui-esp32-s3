@@ -328,6 +328,9 @@
       z-index: 2;
       width: min(108px, 31vw);
       transform: translate(-50%, -50%);
+      display: grid;
+      justify-items: center;
+      gap: 4px;
     }
 
     .switch-item.u {
@@ -368,15 +371,15 @@
     }
 
     .switch-control {
-      display: grid;
+      display: inline-grid;
       place-items: center;
-      width: 100%;
-      min-height: 62px;
+      width: auto;
+      min-height: 0;
       border: 0;
       border-radius: 999px;
       background: transparent;
       box-shadow: none;
-      padding: 4px 2px;
+      padding: 4px 9px;
       text-align: center;
       color: var(--text);
       font: inherit;
@@ -385,8 +388,8 @@
     }
 
     .switch-control.round {
-      width: min(116px, 34vw);
-      min-height: 72px;
+      width: auto;
+      min-height: 0;
       background: transparent;
     }
 
@@ -401,16 +404,13 @@
     }
 
     .switch-name {
-      display: inline-block;
-      border-radius: 999px;
-      padding: 4px 9px;
       font-size: 17px;
       font-weight: 520;
       line-height: 1.1;
       overflow-wrap: anywhere;
     }
 
-    .switch-control.learning .switch-name {
+    .switch-control.learning {
       background: rgba(239, 246, 255, .95);
       box-shadow: 0 6px 16px rgba(37, 99, 235, .12);
       color: #1d4ed8;
@@ -494,12 +494,12 @@
       }
 
       .switch-control {
-        min-height: 58px;
+        padding: 4px 8px;
       }
 
       .switch-control.round {
-        width: 100px;
-        min-height: 66px;
+        width: auto;
+        min-height: 0;
       }
 
       .learn-action {
@@ -833,13 +833,9 @@
       return `
         <div class="switch-item ${positionClass}">
           <button class="switch-control${roundClass}${learnClass}" data-switch-side="${side}" data-switch-key="${key}" data-switch-name="${name}" type="button">
-            <div>
-              <div class="switch-name">${name}</div>
-              <div class="switch-meta">
-                ${config.pressMs[key]}ms ADC${config.learned[key]}
-              </div>
-            </div>
+            <span class="switch-name">${name}</span>
           </button>
+          <div class="switch-meta">${config.pressMs[key]}ms ADC${config.learned[key]}</div>
         </div>
       `;
     }
