@@ -348,10 +348,12 @@
       line-height: 1.1;
     }
 
-    .switch-voltage {
+    .switch-meta {
+      display: grid;
+      gap: 2px;
       color: var(--accent);
       font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
-      font-size: 16px;
+      font-size: 14px;
       font-weight: 850;
     }
 
@@ -550,6 +552,17 @@
         lSeekPlus: 1550,
         lSeekMinus: 2000,
         lMode: 2450
+      },
+      pressMs: {
+        rMain: 700,
+        rCancel: 180,
+        rUpSet: 160,
+        rDownRes: 160,
+        lVolUp: 120,
+        lVolDown: 120,
+        lSeekPlus: 120,
+        lSeekMinus: 120,
+        lMode: 180
       }
     };
 
@@ -589,7 +602,8 @@
 
     function normalizeConfig(next) {
       return {
-        learned: { ...defaultConfig.learned, ...(next.learned || {}) }
+        learned: { ...defaultConfig.learned, ...(next.learned || {}) },
+        pressMs: { ...defaultConfig.pressMs, ...(next.pressMs || {}) }
       };
     }
 
@@ -694,17 +708,14 @@
             <div>
               <div class="label">${direction}</div>
               <div class="switch-name">${name}</div>
-              <div class="switch-voltage">${formatLearnedVoltage(config.learned[key])}</div>
+              <div class="switch-meta">
+                <div>ms ${config.pressMs[key]}</div>
+                <div>ADC ${config.learned[key]}</div>
+              </div>
             </div>
           </div>
         </div>
       `;
-    }
-
-    function formatLearnedVoltage(adc) {
-      const value = Number(adc) || 0;
-      const voltage = value / 4095 * 3.3;
-      return `${value} / ${voltage.toFixed(2)} V`;
     }
 
     function renderConfigJson() {
