@@ -307,10 +307,6 @@
         padding-inline: 22px;
       }
 
-      .dashboard {
-        grid-template-columns: 1.2fr .8fr;
-      }
-
       .grid.three {
         grid-template-columns: repeat(3, minmax(0, 1fr));
       }
@@ -343,33 +339,23 @@
 
     <main>
       <section id="monitor" class="view active">
-        <div class="grid dashboard">
-          <div class="panel">
-            <h2>Live Status</h2>
-            <div class="grid two">
-              <div class="metric">
-                <div class="label">ADC現在値</div>
-                <div id="statusAdc" class="value">0</div>
-              </div>
-              <div class="metric">
-                <div class="label">判定中ボタン名</div>
-                <div id="statusButton" class="value small">None</div>
-              </div>
-              <div class="metric">
-                <div class="label">Vin</div>
-                <div id="statusVin" class="value">0.0 V</div>
-              </div>
-              <div class="metric">
-                <div class="label">Vout</div>
-                <div id="statusVout" class="value">0.0 V</div>
-              </div>
-            </div>
-          </div>
-
-          <div class="panel">
-            <h2>Input</h2>
+        <div class="panel">
+          <h2>Input</h2>
+          <div class="grid two">
             <div class="metric">
-              <div class="label">Brake入力</div>
+              <div class="label">ADC現在値</div>
+              <div id="statusAdc" class="value">0</div>
+            </div>
+            <div class="metric">
+              <div class="label">Vin</div>
+              <div id="statusVin" class="value">0.0 V</div>
+            </div>
+            <div class="metric">
+              <div class="label">Vout</div>
+              <div id="statusVout" class="value">0.0 V</div>
+            </div>
+            <div class="metric">
+              <div class="label">BrakeIn</div>
               <div id="statusBrakeIn" class="status-pill">OFF</div>
             </div>
           </div>
@@ -615,7 +601,6 @@
     function renderStatus(status) {
       currentStatus = status;
       setText("statusAdc", status.adc);
-      setText("statusButton", status.button);
       setText("statusVin", `${status.vin.toFixed(1)} V`);
       setText("statusVout", `${status.vout.toFixed(2)} V`);
       setText("learnAdc", status.adc);
