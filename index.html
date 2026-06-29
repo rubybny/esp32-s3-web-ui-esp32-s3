@@ -288,7 +288,7 @@
 
     .switch-face {
       position: relative;
-      min-height: 318px;
+      min-height: 300px;
       aspect-ratio: 1;
       border: 0;
       border-radius: 999px;
@@ -300,7 +300,7 @@
     .switch-face::before {
       content: "";
       position: absolute;
-      inset: 24px;
+      inset: 22px;
       border-radius: 999px;
       border: 8px solid rgba(37, 99, 235, .075);
       box-shadow: inset 0 0 0 1px rgba(37, 99, 235, .07);
@@ -310,7 +310,7 @@
     .switch-face::after {
       content: "";
       position: absolute;
-      inset: 106px;
+      inset: 94px;
       border-radius: 999px;
       border: 1px solid rgba(148, 163, 184, .18);
       background: transparent;
@@ -326,17 +326,17 @@
     .switch-item {
       position: absolute;
       z-index: 2;
-      min-width: 112px;
+      width: min(108px, 31vw);
       transform: translate(-50%, -50%);
     }
 
     .switch-item.u {
       left: 50%;
-      top: 20%;
+      top: 22%;
     }
 
     .switch-item.l {
-      left: 22%;
+      left: 25%;
       top: 50%;
     }
 
@@ -346,13 +346,13 @@
     }
 
     .switch-item.r {
-      left: 78%;
+      left: 75%;
       top: 50%;
     }
 
     .switch-item.d {
       left: 50%;
-      top: 80%;
+      top: 78%;
     }
 
     .learn-action {
@@ -370,8 +370,8 @@
     .switch-control {
       display: grid;
       place-items: center;
-      width: 112px;
-      min-height: 66px;
+      width: 100%;
+      min-height: 62px;
       border: 0;
       border-radius: 999px;
       background: transparent;
@@ -385,8 +385,8 @@
     }
 
     .switch-control.round {
-      width: 120px;
-      min-height: 78px;
+      width: min(116px, 34vw);
+      min-height: 72px;
       background: transparent;
     }
 
@@ -401,16 +401,17 @@
     }
 
     .switch-name {
-      font-size: 18px;
+      font-size: 17px;
       font-weight: 520;
       line-height: 1.1;
+      overflow-wrap: anywhere;
     }
 
     .switch-meta {
       display: block;
       color: var(--muted);
       font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 500;
       margin-top: 4px;
       white-space: nowrap;
@@ -466,7 +467,7 @@
       }
 
       .switch-face {
-        min-height: 320px;
+        min-height: 318px;
       }
 
       .actions {
@@ -476,21 +477,20 @@
 
     @media (max-width: 380px) {
       .switch-face {
-        min-height: 278px;
+        min-height: 266px;
       }
 
       .switch-item {
-        min-width: 100px;
+        width: 92px;
       }
 
       .switch-control {
-        width: 100px;
-        min-height: 62px;
+        min-height: 58px;
       }
 
       .switch-control.round {
-        width: 108px;
-        min-height: 70px;
+        width: 100px;
+        min-height: 66px;
       }
 
       .learn-action {
@@ -499,11 +499,11 @@
       }
 
       .switch-name {
-        font-size: 16px;
+        font-size: 15px;
       }
 
       .switch-meta {
-        font-size: 12px;
+        font-size: 10px;
       }
     }
   </style>
@@ -827,7 +827,7 @@
             <div>
               <div class="switch-name">${name}</div>
               <div class="switch-meta">
-                ${config.pressMs[key]} ms / ADC ${config.learned[key]}
+                ${config.pressMs[key]}ms ADC${config.learned[key]}
               </div>
             </div>
           </button>
