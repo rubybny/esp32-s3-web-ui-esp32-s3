@@ -358,6 +358,10 @@
       box-shadow: 0 7px 18px rgba(17, 24, 39, .06);
       padding: 8px 6px;
       text-align: center;
+      color: var(--text);
+      font: inherit;
+      line-height: 1.2;
+      transition: border-color .16s ease, background .16s ease, box-shadow .16s ease, transform .16s ease;
     }
 
     .switch-control.round {
@@ -365,6 +369,17 @@
       min-height: 86px;
       border-color: rgba(37, 99, 235, .28);
       background: #eff6ff;
+    }
+
+    .switch-control.learning {
+      border-color: rgba(37, 99, 235, .62);
+      background: #dbeafe;
+      box-shadow: 0 8px 20px rgba(37, 99, 235, .13);
+      cursor: pointer;
+    }
+
+    .switch-control.learning:active {
+      transform: scale(.98);
     }
 
     .switch-name {
@@ -654,10 +669,7 @@
 
     let config = loadConfig();
     let currentStatus = makeMockStatus();
-    const learnCursor = {
-      left: 0,
-      right: 0
-    };
+    let learningSide = null;
 
     function clone(value) {
       return JSON.parse(JSON.stringify(value));
@@ -758,41 +770,49 @@
     }
 
     function renderSteeringSwitches() {
-      document.getElementById("leftSwitches").innerHTML = switchGroups.left.map(renderSwitchItem).join("");
-      document.getElementById("rightSwitches").innerHTML = switchGroups.right.map(renderSwitchItem).join("");
+      document.getElementById("leftSwitches").innerHTML = switchGroups.left.map((item) => renderSwitchItem(item, "left")).join("");
+      document.getElementById("rightSwitches").innerHTML = switchGroups.right.map((item) => renderSwitchItem(item, "right")).join("");
       document.querySelectorAll("[data-learn-side]").forEach((button) => {
         const side = button.dataset.learnSide;
-        const [, direction] = switchGroups[side][learnCursor[side] % switchGroups[side].length];
-        button.textContent = `Learn ${direction}`;
+        button.textContent = learningSide === side ? "Learning" : "Learn";
+        button.classList.toggle("primary", learningSide === side);
+      });
+      document.querySelectorAll("[data-switch-key]").forEach((button) => {
+        button.addEventListener("click", () => learnSwitchValue(button.dataset.switchSide, button.dataset.switchKey, button.dataset.switchName));
       });
     }
 
-    async function learnNextSwitch(side) {
-      const items = switchGroups[side];
-      const [key, direction, name] = items[learnCursor[side] % items.length];
+    function startLearning(side) {
+      learningSide = learningSide === side ? null : side;
+      renderSteeringSwitches();
+      showMessage("steeringMessage", learningSide ? `${side.toUpperCase()} learning` : "");
+    }
+
+    async function learnSwitchValue(side, key, name) {
+      if (learningSide !== side) return;
       config.learned[key] = currentStatus.adc;
-      learnCursor[side] = (learnCursor[side] + 1) % items.length;
+      learningSide = null;
       await apiSaveConfig(config);
       renderSteeringSwitches();
       renderConfigJson();
-      showMessage("steeringMessage", `${side.toUpperCase()} ${direction} ${name} = ${currentStatus.adc}`);
+      showMessage("steeringMessage", `${side.toUpperCase()} ${name} = ${currentStatus.adc}`);
     }
 
-    function renderSwitchItem([key, direction, name]) {
+    function renderSwitchItem([key, direction, name], side) {
       const positionClass = direction.toLowerCase();
       const roundClass = direction === "C" ? " round" : "";
+      const learnClass = learningSide === side ? " learning" : "";
       return `
         <div class="switch-item ${positionClass}">
-          <div class="switch-control${roundClass}">
+          <button class="switch-control${roundClass}${learnClass}" data-switch-side="${side}" data-switch-key="${key}" data-switch-name="${name}" type="button">
             <div>
-              <div class="label">${direction}</div>
               <div class="switch-name">${name}</div>
               <div class="switch-meta">
                 <div>ms ${config.pressMs[key]}</div>
                 <div>ADC ${config.learned[key]}</div>
               </div>
             </div>
-          </div>
+          </button>
         </div>
       `;
     }
@@ -831,7 +851,7 @@
       });
 
       document.querySelectorAll("[data-learn-side]").forEach((button) => {
-        button.addEventListener("click", () => learnNextSwitch(button.dataset.learnSide));
+        button.addEventListener("click", () => startLearning(button.dataset.learnSide));
       });
 
       document.getElementById("exportConfig").addEventListener("click", () => {
