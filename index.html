@@ -124,7 +124,7 @@
       top: 0;
       z-index: 20;
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(3, 1fr);
       gap: 6px;
       padding: 8px 0 12px;
       background: rgba(9, 11, 15, .94);
@@ -244,34 +244,95 @@
       color: #1b1000;
     }
 
-    .learn-row,
-    .timing-row {
+    .steering-layout {
       display: grid;
-      grid-template-columns: 1fr;
-      gap: 8px;
-      border-top: 1px solid var(--line);
-      padding: 12px 0;
+      gap: 14px;
     }
 
-    .learn-row:first-child,
-    .timing-row:first-child {
-      border-top: 0;
-      padding-top: 0;
+    .switch-unit {
+      display: grid;
+      gap: 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #0d121b;
+      padding: 12px;
     }
 
-    .learn-name,
-    .timing-name {
+    .switch-title {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 10px;
-      font-weight: 800;
+      color: var(--muted);
+      font-size: 15px;
+      font-weight: 850;
+      text-transform: uppercase;
     }
 
-    .learn-value {
+    .switch-face {
+      display: grid;
+      gap: 10px;
+      min-height: 250px;
+      border: 1px solid #526071;
+      border-radius: 28px;
+      background:
+        linear-gradient(135deg, rgba(238, 243, 251, .16), rgba(238, 243, 251, .03) 38%, rgba(34, 211, 238, .10)),
+        repeating-linear-gradient(135deg, rgba(255, 255, 255, .05) 0 2px, transparent 2px 8px),
+        #1a2230;
+      padding: 14px;
+    }
+
+    .switch-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      align-content: stretch;
+    }
+
+    .switch-item {
+      display: grid;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .learn-action {
+      min-height: 42px;
+      padding: 8px;
+      border-color: rgba(34, 211, 238, .58);
+      background: #123647;
+      font-size: 15px;
+    }
+
+    .switch-control {
+      display: grid;
+      place-items: center;
+      min-height: 82px;
+      border: 1px solid #677384;
+      border-radius: 999px;
+      background: linear-gradient(180deg, #303a49, #141b27);
+      box-shadow: inset 0 2px 10px rgba(255, 255, 255, .08), inset 0 -8px 18px rgba(0, 0, 0, .25);
+      padding: 10px;
+      text-align: center;
+    }
+
+    .switch-control.round {
+      aspect-ratio: 1;
+      min-height: 112px;
+      width: min(150px, 100%);
+      justify-self: center;
+    }
+
+    .switch-name {
+      font-size: 18px;
+      font-weight: 900;
+      line-height: 1.1;
+    }
+
+    .switch-voltage {
       color: var(--accent);
       font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
-      font-size: 18px;
+      font-size: 16px;
+      font-weight: 850;
     }
 
     .actions {
@@ -311,10 +372,8 @@
         grid-template-columns: repeat(3, minmax(0, 1fr));
       }
 
-      .learn-row,
-      .timing-row {
-        grid-template-columns: 1fr 220px;
-        align-items: center;
+      .steering-layout {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
       }
 
       .actions {
@@ -332,8 +391,7 @@
 
     <nav class="tabs" aria-label="画面切り替え">
       <button class="tab-button active" data-tab="monitor" type="button">Monitor</button>
-      <button class="tab-button" data-tab="learn" type="button">Learn</button>
-      <button class="tab-button" data-tab="cruise" type="button">Cruise</button>
+      <button class="tab-button" data-tab="steering" type="button">ステリモ</button>
       <button class="tab-button" data-tab="system" type="button">System</button>
     </nav>
 
@@ -387,47 +445,38 @@
           </div>
         </div>
       </section>
-
-      <section id="learn" class="view">
+      <section id="steering" class="view">
         <div class="panel">
-          <h2>Current ADC</h2>
+          <h2>ステリモ</h2>
           <div class="metric">
-            <div class="label">現在ADC値</div>
-            <div id="learnAdc" class="value">0</div>
+            <div class="label">現在ADC</div>
+            <div id="steeringAdc" class="value">0</div>
           </div>
+          <div id="steeringMessage" class="message"></div>
         </div>
 
-        <div class="panel">
-          <h2>R Button</h2>
-          <div id="learnR"></div>
-        </div>
-
-        <div class="panel">
-          <h2>L Button</h2>
-          <div id="learnL"></div>
-        </div>
-
-        <div class="panel">
-          <h2>登録値一覧</h2>
-          <div id="learnedList" class="grid two"></div>
-          <div class="actions" style="margin-top: 14px;">
-            <button id="saveLearn" class="primary" type="button">保存</button>
+        <div class="steering-layout">
+          <div class="switch-unit">
+            <div class="switch-title">
+              <span>ステリモ左</span>
+              <span>L</span>
+            </div>
+            <div class="switch-face">
+              <div id="leftSwitches" class="switch-grid"></div>
+            </div>
           </div>
-          <div id="learnMessage" class="message"></div>
+
+          <div class="switch-unit">
+            <div class="switch-title">
+              <span>ステリモ右</span>
+              <span>R</span>
+            </div>
+            <div class="switch-face">
+              <div id="rightSwitches" class="switch-grid"></div>
+            </div>
+          </div>
         </div>
       </section>
-
-      <section id="cruise" class="view">
-        <div class="panel">
-          <h2>Timing</h2>
-          <div id="timingForm"></div>
-          <div class="actions" style="margin-top: 14px;">
-            <button id="saveTiming" class="primary" type="button">保存</button>
-          </div>
-          <div id="timingMessage" class="message"></div>
-        </div>
-      </section>
-
       <section id="system" class="view">
         <div class="panel">
           <h2>Device</h2>
@@ -481,39 +530,24 @@
         lSeekPlus: 1550,
         lSeekMinus: 2000,
         lMode: 2450
-      },
-      timing: {
-        mainHoldMs: 700,
-        cancelMs: 180,
-        upSetMs: 160,
-        downResMs: 160,
-        brakeOutMs: 250
       }
     };
 
-    const learnGroups = {
-      r: [
-        ["rMain", "Main"],
-        ["rCancel", "Cancel"],
-        ["rUpSet", "Up/Set"],
-        ["rDownRes", "Down/Res"]
-      ],
-      l: [
+    const switchGroups = {
+      left: [
         ["lVolUp", "VolUp"],
         ["lVolDown", "VolDown"],
         ["lSeekPlus", "Seek+"],
         ["lSeekMinus", "Seek-"],
         ["lMode", "Mode"]
+      ],
+      right: [
+        ["rMain", "Main"],
+        ["rCancel", "Cancel"],
+        ["rUpSet", "Up/Set"],
+        ["rDownRes", "Down/Res"]
       ]
     };
-
-    const timingFields = [
-      ["mainHoldMs", "Main長押し時間 ms"],
-      ["cancelMs", "Cancel出力時間 ms"],
-      ["upSetMs", "Up/Set出力時間 ms"],
-      ["downResMs", "Down/Res出力時間 ms"],
-      ["brakeOutMs", "Brake疑似出力時間 ms"]
-    ];
 
     let config = loadConfig();
     let currentStatus = makeMockStatus();
@@ -535,8 +569,7 @@
 
     function normalizeConfig(next) {
       return {
-        learned: { ...defaultConfig.learned, ...(next.learned || {}) },
-        timing: { ...defaultConfig.timing, ...(next.timing || {}) }
+        learned: { ...defaultConfig.learned, ...(next.learned || {}) }
       };
     }
 
@@ -607,7 +640,7 @@
       setText("statusAdc", status.adc);
       setText("statusVin", `${status.vin.toFixed(1)} V`);
       setText("statusVout", `${status.vout.toFixed(2)} V`);
-      setText("learnAdc", status.adc);
+      setText("steeringAdc", status.adc);
       setPill("statusBrakeIn", status.brakeIn);
       setPill("outMain", status.outputs.main);
       setPill("outUpSet", status.outputs.upSet);
@@ -616,50 +649,40 @@
       setPill("outBrake", status.outputs.brakeOut);
     }
 
-    function renderLearnRows() {
-      document.getElementById("learnR").innerHTML = learnGroups.r.map(renderLearnRow).join("");
-      document.getElementById("learnL").innerHTML = learnGroups.l.map(renderLearnRow).join("");
+    function renderSteeringSwitches() {
+      document.getElementById("leftSwitches").innerHTML = switchGroups.left.map(renderSwitchItem).join("");
+      document.getElementById("rightSwitches").innerHTML = switchGroups.right.map(renderSwitchItem).join("");
       document.querySelectorAll("[data-learn-key]").forEach((button) => {
-        button.addEventListener("click", () => {
+        button.addEventListener("click", async () => {
           const key = button.dataset.learnKey;
           config.learned[key] = currentStatus.adc;
-          renderLearnRows();
+          await apiSaveConfig(config);
+          renderSteeringSwitches();
           renderConfigJson();
-          showMessage("learnMessage", `${button.dataset.learnName} = ${currentStatus.adc}`);
+          showMessage("steeringMessage", `${button.dataset.learnName} = ${currentStatus.adc}`);
         });
       });
-      renderLearnedList();
     }
 
-    function renderLearnRow([key, name]) {
+    function renderSwitchItem([key, name], index) {
+      const roundClass = index === 0 ? " round" : "";
       return `
-        <div class="learn-row">
-          <div class="learn-name">
-            <span>${name}</span>
-            <span class="learn-value">${config.learned[key]}</span>
+        <div class="switch-item">
+          <button class="learn-action" data-learn-key="${key}" data-learn-name="${name}" type="button">Learn</button>
+          <div class="switch-control${roundClass}">
+            <div>
+              <div class="switch-name">${name}</div>
+              <div class="switch-voltage">${formatLearnedVoltage(config.learned[key])}</div>
+            </div>
           </div>
-          <button data-learn-key="${key}" data-learn-name="${name}" type="button">現在値を登録</button>
         </div>
       `;
     }
 
-    function renderLearnedList() {
-      const rows = [...learnGroups.r, ...learnGroups.l].map(([key, name]) => `
-        <div class="metric">
-          <div class="label">${name}</div>
-          <div class="value small">${config.learned[key]}</div>
-        </div>
-      `);
-      document.getElementById("learnedList").innerHTML = rows.join("");
-    }
-
-    function renderTimingForm() {
-      document.getElementById("timingForm").innerHTML = timingFields.map(([key, name]) => `
-        <label class="timing-row">
-          <span class="timing-name">${name}</span>
-          <input data-timing-key="${key}" type="number" inputmode="numeric" min="0" max="10000" step="10" value="${config.timing[key]}">
-        </label>
-      `).join("");
+    function formatLearnedVoltage(adc) {
+      const value = Number(adc) || 0;
+      const voltage = value / 4095 * 3.3;
+      return `${value} / ${voltage.toFixed(2)} V`;
     }
 
     function renderConfigJson() {
@@ -667,8 +690,7 @@
     }
 
     function renderAll() {
-      renderLearnRows();
-      renderTimingForm();
+      renderSteeringSwitches();
       renderConfigJson();
     }
 
@@ -694,21 +716,6 @@
     function bindEvents() {
       document.querySelectorAll(".tab-button").forEach((button) => {
         button.addEventListener("click", () => switchTab(button.dataset.tab));
-      });
-
-      document.getElementById("saveLearn").addEventListener("click", async () => {
-        await apiSaveConfig(config);
-        renderConfigJson();
-        showMessage("learnMessage", "保存しました");
-      });
-
-      document.getElementById("saveTiming").addEventListener("click", async () => {
-        document.querySelectorAll("[data-timing-key]").forEach((input) => {
-          config.timing[input.dataset.timingKey] = Number(input.value || 0);
-        });
-        await apiSaveConfig(config);
-        renderConfigJson();
-        showMessage("timingMessage", "保存しました");
       });
 
       document.getElementById("exportConfig").addEventListener("click", () => {
