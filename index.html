@@ -391,8 +391,8 @@
     }
 
     .switch-control.learning {
-      background: rgba(239, 246, 255, .82);
-      box-shadow: 0 10px 24px rgba(37, 99, 235, .12);
+      background: transparent;
+      box-shadow: none;
       cursor: pointer;
     }
 
@@ -401,10 +401,19 @@
     }
 
     .switch-name {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 4px 9px;
       font-size: 17px;
       font-weight: 520;
       line-height: 1.1;
       overflow-wrap: anywhere;
+    }
+
+    .switch-control.learning .switch-name {
+      background: rgba(239, 246, 255, .95);
+      box-shadow: 0 6px 16px rgba(37, 99, 235, .12);
+      color: #1d4ed8;
     }
 
     .switch-meta {
