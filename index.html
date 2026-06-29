@@ -50,7 +50,7 @@
       background: #ffffff;
       color: var(--text);
       padding: 12px 14px;
-      font-weight: 720;
+      font-weight: 500;
       cursor: pointer;
       touch-action: manipulation;
     }
@@ -112,6 +112,7 @@
     h1 {
       margin: 0;
       font-size: clamp(25px, 7vw, 38px);
+      font-weight: 520;
       letter-spacing: 0;
       line-height: 1.05;
     }
@@ -177,12 +178,13 @@
 
     .panel h2 {
       font-size: 21px;
+      font-weight: 540;
     }
 
     .panel h3 {
       color: var(--muted);
       font-size: 16px;
-      font-weight: 800;
+      font-weight: 520;
       text-transform: uppercase;
     }
 
@@ -209,13 +211,13 @@
     .label {
       color: var(--muted);
       font-size: 14px;
-      font-weight: 700;
+      font-weight: 500;
     }
 
     .value {
       overflow-wrap: anywhere;
       font-size: 26px;
-      font-weight: 850;
+      font-weight: 540;
       line-height: 1.1;
     }
 
@@ -234,7 +236,7 @@
       background: var(--off);
       color: #334155;
       font-size: 16px;
-      font-weight: 850;
+      font-weight: 520;
     }
 
     .status-pill.on {
@@ -274,7 +276,7 @@
       gap: 10px;
       color: var(--muted);
       font-size: 14px;
-      font-weight: 850;
+      font-weight: 520;
       text-transform: uppercase;
     }
 
@@ -286,32 +288,14 @@
 
     .switch-face {
       position: relative;
-      min-height: 330px;
-      aspect-ratio: 1.05;
-      border: 0;
-      border-radius: 999px;
-      background: transparent;
+      min-height: 250px;
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, .94), rgba(248, 250, 252, .92)),
+        radial-gradient(circle at 50% 50%, rgba(37, 99, 235, .10), transparent 45%);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, .85), 0 10px 24px rgba(17, 24, 39, .06);
       padding: 18px;
-    }
-
-    .switch-face::before {
-      content: "";
-      position: absolute;
-      inset: 28px;
-      border-radius: 999px;
-      background: conic-gradient(from -6deg,
-        transparent 0deg 30deg,
-        rgba(37, 99, 235, .42) 30deg 60deg,
-        transparent 60deg 120deg,
-        rgba(37, 99, 235, .42) 120deg 150deg,
-        transparent 150deg 210deg,
-        rgba(37, 99, 235, .42) 210deg 240deg,
-        transparent 240deg 300deg,
-        rgba(37, 99, 235, .42) 300deg 330deg,
-        transparent 332deg 360deg);
-      -webkit-mask: radial-gradient(circle, transparent 0 65%, #000 66% 71%, transparent 72%);
-      mask: radial-gradient(circle, transparent 0 65%, #000 66% 71%, transparent 72%);
-      pointer-events: none;
     }
 
     .switch-grid {
@@ -322,39 +306,33 @@
     .switch-item {
       position: absolute;
       z-index: 1;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      min-width: 118px;
+      min-width: 112px;
       transform: translate(-50%, -50%);
     }
 
     .switch-item.u {
       left: 50%;
-      top: 17%;
-      flex-direction: column;
+      top: 20%;
     }
 
     .switch-item.l {
-      left: 17%;
+      left: 23%;
       top: 50%;
     }
 
     .switch-item.c {
       left: 50%;
       top: 50%;
-      flex-direction: column;
     }
 
     .switch-item.r {
-      left: 83%;
+      left: 77%;
       top: 50%;
     }
 
     .switch-item.d {
       left: 50%;
-      top: 83%;
-      flex-direction: column-reverse;
+      top: 80%;
     }
 
     .learn-action {
@@ -365,30 +343,33 @@
       background: #eff6ff;
       color: #1d4ed8;
       font-size: 15px;
+      font-weight: 500;
       white-space: nowrap;
     }
 
     .switch-control {
       display: grid;
       place-items: center;
-      width: 118px;
-      min-height: 76px;
-      border: 0;
-      background: transparent;
-      box-shadow: none;
-      padding: 6px 4px;
+      width: 112px;
+      min-height: 70px;
+      border: 1px solid rgba(203, 213, 225, .85);
+      border-radius: 16px;
+      background: rgba(255, 255, 255, .88);
+      box-shadow: 0 7px 18px rgba(17, 24, 39, .06);
+      padding: 8px 6px;
       text-align: center;
     }
 
     .switch-control.round {
-      aspect-ratio: auto;
-      width: 118px;
-      min-height: 76px;
+      width: 124px;
+      min-height: 86px;
+      border-color: rgba(37, 99, 235, .28);
+      background: #eff6ff;
     }
 
     .switch-name {
       font-size: 18px;
-      font-weight: 820;
+      font-weight: 520;
       line-height: 1.1;
     }
 
@@ -398,7 +379,7 @@
       color: var(--muted);
       font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
       font-size: 13px;
-      font-weight: 760;
+      font-weight: 500;
     }
 
     .actions {
@@ -411,7 +392,7 @@
       min-height: 26px;
       color: var(--accent);
       font-size: 15px;
-      font-weight: 700;
+      font-weight: 500;
     }
 
     .json-actions {
