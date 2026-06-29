@@ -270,76 +270,91 @@
     }
 
     .switch-face {
-      display: grid;
-      gap: 10px;
-      min-height: 250px;
+      position: relative;
+      min-height: 330px;
+      aspect-ratio: 1.05;
       border: 1px solid #526071;
-      border-radius: 28px;
+      border-radius: 999px;
       background:
+        radial-gradient(circle at 50% 50%, rgba(9, 11, 15, .94) 0 25%, rgba(31, 42, 58, .92) 26% 45%, rgba(82, 96, 113, .42) 46% 48%, transparent 49%),
         linear-gradient(135deg, rgba(238, 243, 251, .16), rgba(238, 243, 251, .03) 38%, rgba(34, 211, 238, .10)),
         repeating-linear-gradient(135deg, rgba(255, 255, 255, .05) 0 2px, transparent 2px 8px),
         #1a2230;
-      padding: 14px;
+      padding: 18px;
     }
 
     .switch-grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 10px;
-      align-content: stretch;
+      position: absolute;
+      inset: 0;
     }
 
     .switch-item {
-      display: grid;
+      position: absolute;
+      display: flex;
+      align-items: center;
       gap: 8px;
-      min-width: 0;
+      min-width: 142px;
+      transform: translate(-50%, -50%);
     }
 
     .switch-item.u {
-      grid-column: 2;
+      left: 50%;
+      top: 17%;
+      flex-direction: column;
     }
 
     .switch-item.l {
-      grid-column: 1;
+      left: 17%;
+      top: 50%;
+      flex-direction: row;
     }
 
     .switch-item.c {
-      grid-column: 2;
+      left: 50%;
+      top: 50%;
+      flex-direction: column;
     }
 
     .switch-item.r {
-      grid-column: 3;
+      left: 83%;
+      top: 50%;
+      flex-direction: row-reverse;
     }
 
     .switch-item.d {
-      grid-column: 2;
+      left: 50%;
+      top: 83%;
+      flex-direction: column-reverse;
     }
 
     .learn-action {
       min-height: 42px;
-      padding: 8px;
+      min-width: 74px;
+      padding: 8px 10px;
       border-color: rgba(34, 211, 238, .58);
       background: #123647;
       font-size: 15px;
+      white-space: nowrap;
     }
 
     .switch-control {
       display: grid;
       place-items: center;
-      min-height: 82px;
+      width: 112px;
+      min-height: 88px;
       border: 1px solid #677384;
-      border-radius: 999px;
+      border-radius: 18px;
       background: linear-gradient(180deg, #303a49, #141b27);
       box-shadow: inset 0 2px 10px rgba(255, 255, 255, .08), inset 0 -8px 18px rgba(0, 0, 0, .25);
-      padding: 10px;
+      padding: 9px;
       text-align: center;
     }
 
     .switch-control.round {
       aspect-ratio: 1;
-      min-height: 112px;
-      width: min(150px, 100%);
-      justify-self: center;
+      width: 120px;
+      min-height: 120px;
+      border-radius: 999px;
     }
 
     .switch-name {
@@ -398,8 +413,45 @@
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
 
+      .switch-face {
+        min-height: 360px;
+      }
+
       .actions {
         grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    @media (max-width: 380px) {
+      .switch-face {
+        min-height: 300px;
+      }
+
+      .switch-item {
+        min-width: 126px;
+      }
+
+      .switch-control {
+        width: 98px;
+        min-height: 80px;
+      }
+
+      .switch-control.round {
+        width: 104px;
+        min-height: 104px;
+      }
+
+      .learn-action {
+        min-width: 64px;
+        font-size: 14px;
+      }
+
+      .switch-name {
+        font-size: 16px;
+      }
+
+      .switch-meta {
+        font-size: 12px;
       }
     }
   </style>
