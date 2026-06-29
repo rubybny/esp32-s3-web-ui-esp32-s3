@@ -386,16 +386,31 @@
       transition: border-color .16s ease, background .16s ease, box-shadow .16s ease, transform .16s ease;
     }
 
+    .switch-control > div {
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .72);
+      padding: 7px 11px;
+      box-shadow: 0 2px 10px rgba(15, 23, 42, .05);
+    }
+
     .switch-control.round {
       width: 120px;
       min-height: 78px;
       background: transparent;
     }
 
+    .switch-control.round > div {
+      padding: 9px 14px;
+    }
+
     .switch-control.learning {
       background: rgba(239, 246, 255, .78);
       box-shadow: 0 8px 22px rgba(37, 99, 235, .10);
       cursor: pointer;
+    }
+
+    .switch-control.learning > div {
+      background: rgba(255, 255, 255, .9);
     }
 
     .switch-control.learning:active {
