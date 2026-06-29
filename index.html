@@ -269,18 +269,40 @@
       text-transform: uppercase;
     }
 
+    .switch-title-main {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
     .switch-face {
       position: relative;
       min-height: 330px;
       aspect-ratio: 1.05;
-      border: 1px solid #526071;
+      border: 0;
       border-radius: 999px;
-      background:
-        radial-gradient(circle at 50% 50%, rgba(9, 11, 15, .94) 0 25%, rgba(31, 42, 58, .92) 26% 45%, rgba(82, 96, 113, .42) 46% 48%, transparent 49%),
-        linear-gradient(135deg, rgba(238, 243, 251, .16), rgba(238, 243, 251, .03) 38%, rgba(34, 211, 238, .10)),
-        repeating-linear-gradient(135deg, rgba(255, 255, 255, .05) 0 2px, transparent 2px 8px),
-        #1a2230;
+      background: #0d121b;
       padding: 18px;
+    }
+
+    .switch-face::before {
+      content: "";
+      position: absolute;
+      inset: 24px;
+      border-radius: 999px;
+      background: conic-gradient(from -6deg,
+        transparent 0deg 28deg,
+        rgba(34, 211, 238, .46) 28deg 62deg,
+        transparent 62deg 118deg,
+        rgba(34, 211, 238, .46) 118deg 152deg,
+        transparent 152deg 208deg,
+        rgba(34, 211, 238, .46) 208deg 242deg,
+        transparent 242deg 298deg,
+        rgba(34, 211, 238, .46) 298deg 332deg,
+        transparent 332deg 360deg);
+      -webkit-mask: radial-gradient(circle, transparent 0 68%, #000 69% 72%, transparent 73%);
+      mask: radial-gradient(circle, transparent 0 68%, #000 69% 72%, transparent 73%);
+      pointer-events: none;
     }
 
     .switch-grid {
@@ -293,7 +315,7 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      min-width: 142px;
+      min-width: 118px;
       transform: translate(-50%, -50%);
     }
 
@@ -306,7 +328,6 @@
     .switch-item.l {
       left: 17%;
       top: 50%;
-      flex-direction: row;
     }
 
     .switch-item.c {
@@ -318,7 +339,6 @@
     .switch-item.r {
       left: 83%;
       top: 50%;
-      flex-direction: row-reverse;
     }
 
     .switch-item.d {
@@ -329,7 +349,7 @@
 
     .learn-action {
       min-height: 42px;
-      min-width: 74px;
+      min-width: 86px;
       padding: 8px 10px;
       border-color: rgba(34, 211, 238, .58);
       background: #123647;
@@ -340,21 +360,19 @@
     .switch-control {
       display: grid;
       place-items: center;
-      width: 112px;
-      min-height: 88px;
-      border: 1px solid #677384;
-      border-radius: 18px;
-      background: linear-gradient(180deg, #303a49, #141b27);
-      box-shadow: inset 0 2px 10px rgba(255, 255, 255, .08), inset 0 -8px 18px rgba(0, 0, 0, .25);
-      padding: 9px;
+      width: 118px;
+      min-height: 76px;
+      border: 0;
+      background: transparent;
+      box-shadow: none;
+      padding: 4px;
       text-align: center;
     }
 
     .switch-control.round {
-      aspect-ratio: 1;
-      width: 120px;
-      min-height: 120px;
-      border-radius: 999px;
+      aspect-ratio: auto;
+      width: 118px;
+      min-height: 76px;
     }
 
     .switch-name {
@@ -532,8 +550,8 @@
         <div class="steering-layout">
           <div class="switch-unit">
             <div class="switch-title">
-              <span>ステリモ左</span>
-              <span>L</span>
+              <span class="switch-title-main"><span>ステリモ左</span><span>L</span></span>
+              <button class="learn-action" data-learn-side="left" type="button">Learn</button>
             </div>
             <div class="switch-face">
               <div id="leftSwitches" class="switch-grid"></div>
@@ -542,8 +560,8 @@
 
           <div class="switch-unit">
             <div class="switch-title">
-              <span>ステリモ右</span>
-              <span>R</span>
+              <span class="switch-title-main"><span>ステリモ右</span><span>R</span></span>
+              <button class="learn-action" data-learn-side="right" type="button">Learn</button>
             </div>
             <div class="switch-face">
               <div id="rightSwitches" class="switch-grid"></div>
@@ -636,6 +654,10 @@
 
     let config = loadConfig();
     let currentStatus = makeMockStatus();
+    const learnCursor = {
+      left: 0,
+      right: 0
+    };
 
     function clone(value) {
       return JSON.parse(JSON.stringify(value));
@@ -738,16 +760,22 @@
     function renderSteeringSwitches() {
       document.getElementById("leftSwitches").innerHTML = switchGroups.left.map(renderSwitchItem).join("");
       document.getElementById("rightSwitches").innerHTML = switchGroups.right.map(renderSwitchItem).join("");
-      document.querySelectorAll("[data-learn-key]").forEach((button) => {
-        button.addEventListener("click", async () => {
-          const key = button.dataset.learnKey;
-          config.learned[key] = currentStatus.adc;
-          await apiSaveConfig(config);
-          renderSteeringSwitches();
-          renderConfigJson();
-          showMessage("steeringMessage", `${button.dataset.learnName} = ${currentStatus.adc}`);
-        });
+      document.querySelectorAll("[data-learn-side]").forEach((button) => {
+        const side = button.dataset.learnSide;
+        const [, direction] = switchGroups[side][learnCursor[side] % switchGroups[side].length];
+        button.textContent = `Learn ${direction}`;
       });
+    }
+
+    async function learnNextSwitch(side) {
+      const items = switchGroups[side];
+      const [key, direction, name] = items[learnCursor[side] % items.length];
+      config.learned[key] = currentStatus.adc;
+      learnCursor[side] = (learnCursor[side] + 1) % items.length;
+      await apiSaveConfig(config);
+      renderSteeringSwitches();
+      renderConfigJson();
+      showMessage("steeringMessage", `${side.toUpperCase()} ${direction} ${name} = ${currentStatus.adc}`);
     }
 
     function renderSwitchItem([key, direction, name]) {
@@ -755,7 +783,6 @@
       const roundClass = direction === "C" ? " round" : "";
       return `
         <div class="switch-item ${positionClass}">
-          <button class="learn-action" data-learn-key="${key}" data-learn-name="${name}" type="button">Learn</button>
           <div class="switch-control${roundClass}">
             <div>
               <div class="label">${direction}</div>
@@ -801,6 +828,10 @@
     function bindEvents() {
       document.querySelectorAll(".tab-button").forEach((button) => {
         button.addEventListener("click", () => switchTab(button.dataset.tab));
+      });
+
+      document.querySelectorAll("[data-learn-side]").forEach((button) => {
+        button.addEventListener("click", () => learnNextSwitch(button.dataset.learnSide));
       });
 
       document.getElementById("exportConfig").addEventListener("click", () => {
