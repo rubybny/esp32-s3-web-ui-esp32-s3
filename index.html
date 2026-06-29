@@ -252,10 +252,10 @@
     .switch-unit {
       display: grid;
       gap: 12px;
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
+      border: 0;
+      border-radius: 0;
       background: #0d121b;
-      padding: 12px;
+      padding: 4px 0 12px;
     }
 
     .switch-title {
@@ -305,6 +305,18 @@
       pointer-events: none;
     }
 
+    .switch-face::after {
+      content: "";
+      position: absolute;
+      left: 22%;
+      right: 22%;
+      top: 50%;
+      height: 2px;
+      background: rgba(34, 211, 238, .44);
+      transform: translateY(-50%);
+      pointer-events: none;
+    }
+
     .switch-grid {
       position: absolute;
       inset: 0;
@@ -312,6 +324,7 @@
 
     .switch-item {
       position: absolute;
+      z-index: 1;
       display: flex;
       align-items: center;
       gap: 8px;
