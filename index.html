@@ -284,7 +284,7 @@
 
     .switch-grid {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 10px;
       align-content: stretch;
     }
@@ -293,6 +293,26 @@
       display: grid;
       gap: 8px;
       min-width: 0;
+    }
+
+    .switch-item.u {
+      grid-column: 2;
+    }
+
+    .switch-item.l {
+      grid-column: 1;
+    }
+
+    .switch-item.c {
+      grid-column: 2;
+    }
+
+    .switch-item.r {
+      grid-column: 3;
+    }
+
+    .switch-item.d {
+      grid-column: 2;
     }
 
     .learn-action {
@@ -535,17 +555,17 @@
 
     const switchGroups = {
       left: [
-        ["lVolUp", "VolUp"],
-        ["lVolDown", "VolDown"],
-        ["lSeekPlus", "Seek+"],
-        ["lSeekMinus", "Seek-"],
-        ["lMode", "Mode"]
+        ["lVolUp", "U", "Vol+"],
+        ["lSeekMinus", "L", "Seek-"],
+        ["lMode", "C", "Mode"],
+        ["lSeekPlus", "R", "Seek+"],
+        ["lVolDown", "D", "Vol-"]
       ],
       right: [
-        ["rMain", "Main"],
-        ["rCancel", "Cancel"],
-        ["rUpSet", "Up/Set"],
-        ["rDownRes", "Down/Res"]
+        ["rDownRes", "U", "RES+"],
+        ["rMain", "R", "Main"],
+        ["rCancel", "C", "Cancel"],
+        ["rUpSet", "D", "SET-"]
       ]
     };
 
@@ -664,13 +684,15 @@
       });
     }
 
-    function renderSwitchItem([key, name], index) {
-      const roundClass = index === 0 ? " round" : "";
+    function renderSwitchItem([key, direction, name]) {
+      const positionClass = direction.toLowerCase();
+      const roundClass = direction === "C" ? " round" : "";
       return `
-        <div class="switch-item">
+        <div class="switch-item ${positionClass}">
           <button class="learn-action" data-learn-key="${key}" data-learn-name="${name}" type="button">Learn</button>
           <div class="switch-control${roundClass}">
             <div>
+              <div class="label">${direction}</div>
               <div class="switch-name">${name}</div>
               <div class="switch-voltage">${formatLearnedVoltage(config.learned[key])}</div>
             </div>
