@@ -6,21 +6,21 @@
   <title>ESP32-S3 Cruise Converter</title>
   <style>
     :root {
-      color-scheme: dark;
-      --bg: #090b0f;
-      --panel: #121722;
-      --panel-2: #171e2b;
-      --line: #2b3546;
-      --text: #eef3fb;
-      --muted: #aab6c8;
-      --dim: #758398;
-      --accent: #22d3ee;
+      color-scheme: light;
+      --bg: #f6f8fb;
+      --panel: #ffffff;
+      --panel-2: #f8fafc;
+      --line: #dde5ee;
+      --text: #17202c;
+      --muted: #637083;
+      --dim: #96a1af;
+      --accent: #2563eb;
       --accent-2: #f59e0b;
-      --danger: #ef4444;
-      --ok: #22c55e;
-      --off: #465264;
+      --danger: #dc2626;
+      --ok: #16a34a;
+      --off: #d5dde6;
       --radius: 8px;
-      --shadow: 0 16px 40px rgba(0, 0, 0, .28);
+      --shadow: 0 12px 28px rgba(17, 24, 39, .08);
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
@@ -47,10 +47,10 @@
       min-height: 48px;
       border: 1px solid var(--line);
       border-radius: var(--radius);
-      background: #202a3a;
+      background: #ffffff;
       color: var(--text);
       padding: 12px 14px;
-      font-weight: 750;
+      font-weight: 720;
       cursor: pointer;
       touch-action: manipulation;
     }
@@ -60,19 +60,21 @@
     }
 
     button.primary {
-      border-color: rgba(34, 211, 238, .65);
-      background: #0e7490;
+      border-color: rgba(37, 99, 235, .52);
+      background: var(--accent);
       color: #f8fdff;
     }
 
     button.warn {
       border-color: rgba(245, 158, 11, .75);
-      background: #8a4d09;
+      background: #fef3c7;
+      color: #7c3d00;
     }
 
     button.danger {
-      border-color: rgba(239, 68, 68, .75);
-      background: #8d1f1f;
+      border-color: rgba(220, 38, 38, .75);
+      background: #fee2e2;
+      color: #8d1f1f;
     }
 
     input[type="number"],
@@ -80,7 +82,7 @@
       width: 100%;
       border: 1px solid var(--line);
       border-radius: var(--radius);
-      background: #0d121b;
+      background: #ffffff;
       color: var(--text);
       padding: 12px;
       min-height: 48px;
@@ -127,7 +129,7 @@
       grid-template-columns: repeat(3, 1fr);
       gap: 6px;
       padding: 8px 0 12px;
-      background: rgba(9, 11, 15, .94);
+      background: rgba(246, 248, 251, .92);
       backdrop-filter: blur(12px);
     }
 
@@ -135,11 +137,12 @@
       min-height: 52px;
       padding: 8px 4px;
       color: var(--muted);
-      background: #111721;
+      background: #ffffff;
+      box-shadow: 0 1px 4px rgba(17, 24, 39, .05);
     }
 
     .tab-button.active {
-      color: #031013;
+      color: #ffffff;
       border-color: var(--accent);
       background: var(--accent);
     }
@@ -229,14 +232,14 @@
       border-radius: 999px;
       padding: 5px 11px;
       background: var(--off);
-      color: #dce5f2;
+      color: #334155;
       font-size: 16px;
       font-weight: 850;
     }
 
     .status-pill.on {
       background: var(--ok);
-      color: #04130a;
+      color: #ffffff;
     }
 
     .status-pill.warn {
@@ -245,17 +248,23 @@
     }
 
     .steering-layout {
+      position: relative;
       display: grid;
-      gap: 14px;
+      gap: 22px;
     }
 
     .switch-unit {
       display: grid;
-      gap: 12px;
+      gap: 10px;
       border: 0;
       border-radius: 0;
-      background: #0d121b;
+      background: transparent;
       padding: 4px 0 12px;
+    }
+
+    .switch-unit + .switch-unit {
+      border-top: 1px solid var(--line);
+      padding-top: 22px;
     }
 
     .switch-title {
@@ -264,7 +273,7 @@
       justify-content: space-between;
       gap: 10px;
       color: var(--muted);
-      font-size: 15px;
+      font-size: 14px;
       font-weight: 850;
       text-transform: uppercase;
     }
@@ -281,39 +290,27 @@
       aspect-ratio: 1.05;
       border: 0;
       border-radius: 999px;
-      background: #0d121b;
+      background: transparent;
       padding: 18px;
     }
 
     .switch-face::before {
       content: "";
       position: absolute;
-      inset: 24px;
+      inset: 28px;
       border-radius: 999px;
       background: conic-gradient(from -6deg,
-        transparent 0deg 28deg,
-        rgba(34, 211, 238, .46) 28deg 62deg,
-        transparent 62deg 118deg,
-        rgba(34, 211, 238, .46) 118deg 152deg,
-        transparent 152deg 208deg,
-        rgba(34, 211, 238, .46) 208deg 242deg,
-        transparent 242deg 298deg,
-        rgba(34, 211, 238, .46) 298deg 332deg,
+        transparent 0deg 30deg,
+        rgba(37, 99, 235, .42) 30deg 60deg,
+        transparent 60deg 120deg,
+        rgba(37, 99, 235, .42) 120deg 150deg,
+        transparent 150deg 210deg,
+        rgba(37, 99, 235, .42) 210deg 240deg,
+        transparent 240deg 300deg,
+        rgba(37, 99, 235, .42) 300deg 330deg,
         transparent 332deg 360deg);
-      -webkit-mask: radial-gradient(circle, transparent 0 68%, #000 69% 72%, transparent 73%);
-      mask: radial-gradient(circle, transparent 0 68%, #000 69% 72%, transparent 73%);
-      pointer-events: none;
-    }
-
-    .switch-face::after {
-      content: "";
-      position: absolute;
-      left: 22%;
-      right: 22%;
-      top: 50%;
-      height: 2px;
-      background: rgba(34, 211, 238, .44);
-      transform: translateY(-50%);
+      -webkit-mask: radial-gradient(circle, transparent 0 65%, #000 66% 71%, transparent 72%);
+      mask: radial-gradient(circle, transparent 0 65%, #000 66% 71%, transparent 72%);
       pointer-events: none;
     }
 
@@ -363,9 +360,10 @@
     .learn-action {
       min-height: 42px;
       min-width: 86px;
-      padding: 8px 10px;
-      border-color: rgba(34, 211, 238, .58);
-      background: #123647;
+      padding: 8px 12px;
+      border-color: rgba(37, 99, 235, .35);
+      background: #eff6ff;
+      color: #1d4ed8;
       font-size: 15px;
       white-space: nowrap;
     }
@@ -378,7 +376,7 @@
       border: 0;
       background: transparent;
       box-shadow: none;
-      padding: 4px;
+      padding: 6px 4px;
       text-align: center;
     }
 
@@ -390,17 +388,17 @@
 
     .switch-name {
       font-size: 18px;
-      font-weight: 900;
+      font-weight: 820;
       line-height: 1.1;
     }
 
     .switch-meta {
       display: grid;
       gap: 2px;
-      color: var(--accent);
+      color: var(--muted);
       font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
-      font-size: 14px;
-      font-weight: 850;
+      font-size: 13px;
+      font-weight: 760;
     }
 
     .actions {
@@ -442,6 +440,14 @@
 
       .steering-layout {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 28px;
+      }
+
+      .switch-unit + .switch-unit {
+        border-top: 0;
+        border-left: 1px solid var(--line);
+        padding-top: 4px;
+        padding-left: 28px;
       }
 
       .switch-face {
