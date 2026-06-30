@@ -269,6 +269,20 @@
       padding-top: 22px;
     }
 
+    .steering-status {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 14px;
+      border-bottom: 1px solid var(--line);
+      padding: 2px 0 14px;
+    }
+
+    .steering-status .metric-lite {
+      display: grid;
+      gap: 3px;
+    }
+
     .switch-title {
       display: flex;
       align-items: center;
@@ -417,13 +431,35 @@
     }
 
     .switch-meta {
-      display: block;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 4px;
       color: var(--muted);
       font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
       font-size: 11px;
       font-weight: 500;
       margin-top: 4px;
       white-space: nowrap;
+    }
+
+    .press-select {
+      appearance: none;
+      min-height: 22px;
+      border: 0;
+      border-radius: 999px;
+      background: transparent;
+      color: var(--muted);
+      padding: 0 2px;
+      font: inherit;
+      text-align: center;
+      cursor: pointer;
+    }
+
+    .press-select:focus {
+      outline: 2px solid rgba(37, 99, 235, .26);
+      outline-offset: 2px;
+      background: rgba(239, 246, 255, .9);
     }
 
     .actions {
@@ -526,7 +562,7 @@
 
     <nav class="tabs" aria-label="画面切り替え">
       <button class="tab-button active" data-tab="monitor" type="button">Monitor</button>
-      <button class="tab-button" data-tab="steering" type="button">ステリモ</button>
+      <button class="tab-button" data-tab="steering" type="button">Remote</button>
       <button class="tab-button" data-tab="system" type="button">System</button>
     </nav>
 
@@ -581,10 +617,9 @@
         </div>
       </section>
       <section id="steering" class="view">
-        <div class="panel">
-          <h2>ステリモ</h2>
-          <div class="metric">
-            <div class="label">現在ADC</div>
+        <div class="steering-status">
+          <div class="metric-lite">
+            <div class="label">ADCin living</div>
             <div id="steeringAdc" class="value">0</div>
           </div>
           <div id="steeringMessage" class="message"></div>
@@ -593,7 +628,7 @@
         <div class="steering-layout">
           <div class="switch-unit">
             <div class="switch-title">
-              <span class="switch-title-main"><span>ステリモ左</span><span>L</span></span>
+              <span class="switch-title-main"><span>L</span></span>
               <button class="learn-action" data-learn-side="left" type="button">Learn</button>
             </div>
             <div class="switch-face">
@@ -603,7 +638,7 @@
 
           <div class="switch-unit">
             <div class="switch-title">
-              <span class="switch-title-main"><span>ステリモ右</span><span>R</span></span>
+              <span class="switch-title-main"><span>R</span></span>
               <button class="learn-action" data-learn-side="right" type="button">Learn</button>
             </div>
             <div class="switch-face">
@@ -668,14 +703,14 @@
       },
       pressMs: {
         rMain: 700,
-        rCancel: 180,
-        rUpSet: 160,
-        rDownRes: 160,
-        lVolUp: 120,
-        lVolDown: 120,
-        lSeekPlus: 120,
-        lSeekMinus: 120,
-        lMode: 180
+        rCancel: 200,
+        rUpSet: 200,
+        rDownRes: 200,
+        lVolUp: 100,
+        lVolDown: 100,
+        lSeekPlus: 100,
+        lSeekMinus: 100,
+        lMode: 200
       }
     };
 
@@ -715,10 +750,21 @@
     }
 
     function normalizeConfig(next) {
+      const pressMs = { ...defaultConfig.pressMs, ...(next.pressMs || {}) };
+      Object.keys(pressMs).forEach((key) => {
+        pressMs[key] = normalizePressMs(pressMs[key], defaultConfig.pressMs[key]);
+      });
       return {
         learned: { ...defaultConfig.learned, ...(next.learned || {}) },
-        pressMs: { ...defaultConfig.pressMs, ...(next.pressMs || {}) }
+        pressMs
       };
+    }
+
+    function normalizePressMs(value, fallback = 0) {
+      const numeric = Number(value);
+      if (!Number.isFinite(numeric)) return fallback;
+      const rounded = Math.round(numeric / 100) * 100;
+      return Math.max(0, Math.min(5000, rounded));
     }
 
     async function apiGetStatus() {
@@ -808,6 +854,15 @@
       document.querySelectorAll("[data-switch-key]").forEach((button) => {
         button.addEventListener("click", () => learnSwitchValue(button.dataset.switchSide, button.dataset.switchKey, button.dataset.switchName));
       });
+      document.querySelectorAll("[data-press-key]").forEach((select) => {
+        select.addEventListener("change", async () => {
+          config.pressMs[select.dataset.pressKey] = normalizePressMs(select.value);
+          await apiSaveConfig(config);
+          renderSteeringSwitches();
+          renderConfigJson();
+          showMessage("steeringMessage", `${select.dataset.pressName} ${config.pressMs[select.dataset.pressKey]}ms`);
+        });
+      });
     }
 
     function startLearning(side) {
@@ -835,9 +890,23 @@
           <button class="switch-control${roundClass}${learnClass}" data-switch-side="${side}" data-switch-key="${key}" data-switch-name="${name}" type="button">
             <span class="switch-name">${name}</span>
           </button>
-          <div class="switch-meta">${config.pressMs[key]}ms ADC${config.learned[key]}</div>
+          <div class="switch-meta">
+            <select class="press-select" data-press-key="${key}" data-press-name="${name}" aria-label="${name} press time">
+              ${renderPressOptions(config.pressMs[key])}
+            </select>
+            <span>ADC${config.learned[key]}</span>
+          </div>
         </div>
       `;
+    }
+
+    function renderPressOptions(selectedValue) {
+      const selected = normalizePressMs(selectedValue);
+      let html = "";
+      for (let value = 0; value <= 5000; value += 100) {
+        html += `<option value="${value}"${value === selected ? " selected" : ""}>${value}ms</option>`;
+      }
+      return html;
     }
 
     function renderConfigJson() {
