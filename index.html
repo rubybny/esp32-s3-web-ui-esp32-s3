@@ -273,14 +273,20 @@
       display: flex;
       align-items: flex-end;
       justify-content: space-between;
-      gap: 14px;
+      gap: 20px;
       border-bottom: 1px solid var(--line);
-      padding: 2px 0 14px;
+      padding: 10px 2px 18px;
+      margin-bottom: 6px;
     }
 
     .steering-status .metric-lite {
       display: grid;
-      gap: 3px;
+      gap: 6px;
+      min-width: 138px;
+    }
+
+    .steering-status .value {
+      font-size: 30px;
     }
 
     .switch-title {
@@ -431,16 +437,15 @@
     }
 
     .switch-meta {
-      display: flex;
+      display: grid;
       justify-content: center;
       align-items: center;
-      gap: 4px;
+      gap: 2px;
       color: var(--muted);
       font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
       font-size: 11px;
       font-weight: 500;
       margin-top: 4px;
-      white-space: nowrap;
     }
 
     .press-select {
@@ -891,10 +896,10 @@
             <span class="switch-name">${name}</span>
           </button>
           <div class="switch-meta">
+            <span>ADC${config.learned[key]}</span>
             <select class="press-select" data-press-key="${key}" data-press-name="${name}" aria-label="${name} press time">
               ${renderPressOptions(config.pressMs[key])}
             </select>
-            <span>ADC${config.learned[key]}</span>
           </div>
         </div>
       `;
