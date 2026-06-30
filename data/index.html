@@ -230,6 +230,15 @@
       color: #1b1000;
     }
 
+    .status-pill[data-output] {
+      cursor: pointer;
+      transition: transform 0.16s ease, box-shadow 0.16s ease;
+    }
+
+    .status-pill[data-output]:active {
+      transform: scale(0.96);
+    }
+
     .current-readout {
       color: var(--muted);
       font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
@@ -588,27 +597,27 @@
           <div class="grid two grid three">
             <div class="metric">
               <div class="label">Main出力</div>
-              <div id="outMain" class="status-pill">OFF</div>
+              <div id="outMain" class="status-pill" data-output="main">OFF</div>
               <div id="currentMain" class="current-readout">0 mA</div>
             </div>
             <div class="metric">
               <div class="label">Up/Set出力</div>
-              <div id="outUpSet" class="status-pill">OFF</div>
+              <div id="outUpSet" class="status-pill" data-output="upSet">OFF</div>
               <div id="currentUpSet" class="current-readout">0 mA</div>
             </div>
             <div class="metric">
               <div class="label">Down/Res出力</div>
-              <div id="outDownRes" class="status-pill">OFF</div>
+              <div id="outDownRes" class="status-pill" data-output="downRes">OFF</div>
               <div id="currentDownRes" class="current-readout">0 mA</div>
             </div>
             <div class="metric">
               <div class="label">Cancel出力</div>
-              <div id="outCancel" class="status-pill">OFF</div>
+              <div id="outCancel" class="status-pill" data-output="cancel">OFF</div>
               <div id="currentCancel" class="current-readout">0 mA</div>
             </div>
             <div class="metric">
               <div class="label">Brake疑似出力</div>
-              <div id="outBrake" class="status-pill">OFF</div>
+              <div id="outBrake" class="status-pill" data-output="brakeOut">OFF</div>
               <div id="currentBrakeOut" class="current-readout">0 mA</div>
             </div>
           </div>
@@ -728,7 +737,26 @@
       ]
     };
 
+    const deviceLearnMap = {
+      lVolUp: { side: "L", name: "VolUp" },
+      lVolDown: { side: "L", name: "VolDown" },
+      lSeekPlus: { side: "L", name: "SeekPlus" },
+      lSeekMinus: { side: "L", name: "SeekMinus" },
+      lMode: { side: "L", name: "Mode" },
+      rMain: { side: "R", name: "Main" },
+      rCancel: { side: "R", name: "Cancel" },
+      rUpSet: { side: "R", name: "UpSet" },
+      rDownRes: { side: "R", name: "DownRes" }
+    };
+
     let config = loadConfig();
+    let mockOutputs = {
+      main: false,
+      upSet: false,
+      downRes: false,
+      cancel: false,
+      brakeOut: false
+    };
     let currentStatus = makeMockStatus();
     let learningSide = null;
     let wsClient = null;
@@ -749,12 +777,17 @@
     }
 
     function normalizeConfig(next) {
+      const learned = { ...defaultConfig.learned, ...(next.learned || {}) };
+      Object.keys(learned).forEach((key) => {
+        const numeric = Number(learned[key]);
+        learned[key] = Number.isFinite(numeric) ? numeric : defaultConfig.learned[key];
+      });
       const pressMs = { ...defaultConfig.pressMs, ...(next.pressMs || {}) };
       Object.keys(pressMs).forEach((key) => {
         pressMs[key] = normalizePressMs(pressMs[key], defaultConfig.pressMs[key]);
       });
       return {
-        learned: { ...defaultConfig.learned, ...(next.learned || {}) },
+        learned,
         pressMs
       };
     }
@@ -817,12 +850,112 @@
     async function apiSaveConfig(nextConfig) {
       config = normalizeConfig(nextConfig);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+      if (shouldUseDeviceApi()) {
+        await apiFetchJson("/api/config", {
+          method: "POST",
+          body: JSON.stringify(toDeviceConfig(config))
+        });
+      }
       return { ok: true };
     }
 
     async function apiResetConfig() {
+      if (shouldUseDeviceApi()) {
+        const deviceConfig = await apiFetchJson("/api/reset", { method: "POST" });
+        config = fromDeviceConfig(deviceConfig);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+        return { ok: true };
+      }
       await apiSaveConfig(defaultConfig);
       return { ok: true };
+    }
+
+    async function apiLoadConfig() {
+      if (!shouldUseDeviceApi()) return;
+      try {
+        config = fromDeviceConfig(await apiFetchJson("/api/config"));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+        renderAll();
+      } catch {
+        // Keep local defaults if the ESP API is not reachable yet.
+      }
+    }
+
+    async function apiLearnSwitch(key, adc) {
+      const target = deviceLearnMap[key];
+      if (!target || !shouldUseDeviceApi()) return;
+      const deviceConfig = await apiFetchJson("/api/learn", {
+        method: "POST",
+        body: JSON.stringify({ ...target, adc })
+      });
+      config = fromDeviceConfig(deviceConfig);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+    }
+
+    async function apiSetOutput(name, state) {
+      if (shouldUseDeviceApi()) {
+        return normalizeStatus(await apiFetchJson("/api/output", {
+          method: "POST",
+          body: JSON.stringify({ name, state })
+        }));
+      }
+      mockOutputs = { ...mockOutputs, [name]: state };
+      return normalizeStatus({
+        ...currentStatus,
+        outputs: { ...mockOutputs }
+      });
+    }
+
+    function toDeviceConfig(localConfig) {
+      const local = normalizeConfig(localConfig);
+      return {
+        learned: {
+          L: {
+            VolUp: local.learned.lVolUp,
+            VolDown: local.learned.lVolDown,
+            SeekPlus: local.learned.lSeekPlus,
+            SeekMinus: local.learned.lSeekMinus,
+            Mode: local.learned.lMode
+          },
+          R: {
+            Main: local.learned.rMain,
+            Cancel: local.learned.rCancel,
+            UpSet: local.learned.rUpSet,
+            DownRes: local.learned.rDownRes
+          }
+        },
+        timing: {
+          mainHoldMs: local.pressMs.rMain,
+          cancelMs: local.pressMs.rCancel,
+          upSetMs: local.pressMs.rUpSet,
+          downResMs: local.pressMs.rDownRes,
+          brakeOutMs: 300
+        }
+      };
+    }
+
+    function fromDeviceConfig(deviceConfig) {
+      const learned = deviceConfig?.learned || {};
+      const timing = deviceConfig?.timing || {};
+      return normalizeConfig({
+        learned: {
+          lVolUp: learned.L?.VolUp,
+          lVolDown: learned.L?.VolDown,
+          lSeekPlus: learned.L?.SeekPlus,
+          lSeekMinus: learned.L?.SeekMinus,
+          lMode: learned.L?.Mode,
+          rMain: learned.R?.Main,
+          rCancel: learned.R?.Cancel,
+          rUpSet: learned.R?.UpSet,
+          rDownRes: learned.R?.DownRes
+        },
+        pressMs: {
+          rMain: timing.mainHoldMs,
+          rCancel: timing.cancelMs,
+          rUpSet: timing.upSetMs,
+          rDownRes: timing.downResMs
+        }
+      });
     }
 
     function makeMockStatus() {
@@ -835,13 +968,7 @@
         vin: 12.2,
         vout: 5.0,
         brakeIn: false,
-        outputs: {
-          main: false,
-          upSet: false,
-          downRes: false,
-          cancel: false,
-          brakeOut: false
-        },
+        outputs: { ...mockOutputs },
         currents: {
           brakeIn: 0,
           main: 0,
@@ -942,7 +1069,11 @@
       if (learningSide !== side) return;
       config.learned[key] = currentStatus.adc;
       learningSide = null;
-      await apiSaveConfig(config);
+      if (shouldUseDeviceApi()) {
+        await apiLearnSwitch(key, currentStatus.adc);
+      } else {
+        await apiSaveConfig(config);
+      }
       renderSteeringSwitches();
       renderConfigJson();
       showMessage("steeringMessage", `${side.toUpperCase()} ${name} = ${currentStatus.adc}`);
@@ -1013,6 +1144,14 @@
         button.addEventListener("click", () => startLearning(button.dataset.learnSide));
       });
 
+      document.querySelectorAll("[data-output]").forEach((button) => {
+        button.addEventListener("click", async () => {
+          const name = button.dataset.output;
+          const nextState = !Boolean(currentStatus.outputs?.[name]);
+          renderStatus(await apiSetOutput(name, nextState));
+        });
+      });
+
       document.getElementById("exportConfig").addEventListener("click", () => {
         const blob = new Blob([JSON.stringify(config, null, 2)], { type: "application/json" });
         const url = URL.createObjectURL(blob);
@@ -1063,6 +1202,7 @@
     }
 
     async function startStatusLoop() {
+      await apiLoadConfig();
       renderStatus(await apiGetStatus());
       connectStatusSocket();
       window.setInterval(async () => {
