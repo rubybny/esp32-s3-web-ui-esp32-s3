@@ -7,7 +7,7 @@ Arduino IDE sketch for the ESP32-S3 Wi-Fi AP, REST API, WebSocket status stream,
 Open this folder in Arduino IDE:
 
 ```text
-arduino/CC_S3_Backend
+CruiseController
 ```
 
 ## AP
@@ -36,7 +36,7 @@ http://192.168.4.1/
 The frontend is stored here:
 
 ```text
-arduino/CC_S3_Backend/data/index.html
+CruiseController/data/index.html
 ```
 
 Upload the LittleFS data folder after flashing the sketch.
