@@ -103,25 +103,6 @@
       padding: calc(14px + env(safe-area-inset-top)) 14px calc(24px + env(safe-area-inset-bottom));
     }
 
-    header {
-      display: grid;
-      gap: 4px;
-      padding: 4px 2px 14px;
-    }
-
-    h1 {
-      margin: 0;
-      font-size: clamp(25px, 7vw, 38px);
-      font-weight: 520;
-      letter-spacing: 0;
-      line-height: 1.05;
-    }
-
-    .subtitle {
-      color: var(--muted);
-      font-size: 15px;
-    }
-
     .tabs {
       position: sticky;
       top: 0;
@@ -571,11 +552,6 @@
 </head>
 <body>
   <div class="app">
-    <header>
-      <h1>Cruise Converter</h1>
-      <div class="subtitle">ESP32-S3 AP/Web UI Prototype</div>
-    </header>
-
     <nav class="tabs" aria-label="画面切り替え">
       <button class="tab-button active" data-tab="monitor" type="button">Monitor</button>
       <button class="tab-button" data-tab="steering" type="button">Remote</button>
