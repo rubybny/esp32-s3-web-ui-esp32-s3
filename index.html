@@ -249,6 +249,14 @@
       color: #1b1000;
     }
 
+    .current-readout {
+      color: var(--muted);
+      font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+      font-size: 14px;
+      font-weight: 500;
+      margin-top: 4px;
+    }
+
     .steering-layout {
       position: relative;
       display: grid;
@@ -350,6 +358,7 @@
       transform: translate(-50%, -50%);
       display: grid;
       justify-items: center;
+      text-align: center;
       gap: 4px;
     }
 
@@ -441,6 +450,7 @@
       justify-content: center;
       align-items: center;
       gap: 2px;
+      text-align: center;
       color: var(--muted);
       font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
       font-size: 11px;
@@ -458,6 +468,7 @@
       padding: 0 2px;
       font: inherit;
       text-align: center;
+      text-align-last: center;
       cursor: pointer;
     }
 
@@ -591,6 +602,7 @@
             <div class="metric">
               <div class="label">BrakeIn</div>
               <div id="statusBrakeIn" class="status-pill">OFF</div>
+              <div id="currentBrakeIn" class="current-readout">0 mA</div>
             </div>
           </div>
         </div>
@@ -601,22 +613,27 @@
             <div class="metric">
               <div class="label">Main出力</div>
               <div id="outMain" class="status-pill">OFF</div>
+              <div id="currentMain" class="current-readout">0 mA</div>
             </div>
             <div class="metric">
               <div class="label">Up/Set出力</div>
               <div id="outUpSet" class="status-pill">OFF</div>
+              <div id="currentUpSet" class="current-readout">0 mA</div>
             </div>
             <div class="metric">
               <div class="label">Down/Res出力</div>
               <div id="outDownRes" class="status-pill">OFF</div>
+              <div id="currentDownRes" class="current-readout">0 mA</div>
             </div>
             <div class="metric">
               <div class="label">Cancel出力</div>
               <div id="outCancel" class="status-pill">OFF</div>
+              <div id="currentCancel" class="current-readout">0 mA</div>
             </div>
             <div class="metric">
               <div class="label">Brake疑似出力</div>
               <div id="outBrake" class="status-pill">OFF</div>
+              <div id="currentBrakeOut" class="current-readout">0 mA</div>
             </div>
           </div>
         </div>
@@ -802,6 +819,14 @@
           downRes: false,
           cancel: false,
           brakeOut: false
+        },
+        currents: {
+          brakeIn: 0,
+          main: 0,
+          upSet: 0,
+          downRes: 0,
+          cancel: 0,
+          brakeOut: 0
         }
       };
     }
@@ -846,6 +871,21 @@
       setPill("outDownRes", status.outputs.downRes);
       setPill("outCancel", status.outputs.cancel);
       setPill("outBrake", status.outputs.brakeOut);
+      renderCurrents(status.currents || {});
+    }
+
+    function renderCurrents(currents) {
+      setCurrent("currentBrakeIn", currents.brakeIn);
+      setCurrent("currentMain", currents.main);
+      setCurrent("currentUpSet", currents.upSet);
+      setCurrent("currentDownRes", currents.downRes);
+      setCurrent("currentCancel", currents.cancel);
+      setCurrent("currentBrakeOut", currents.brakeOut);
+    }
+
+    function setCurrent(id, value) {
+      const numeric = Number(value);
+      setText(id, `${Number.isFinite(numeric) ? numeric.toFixed(0) : "0"} mA`);
     }
 
     function renderSteeringSwitches() {
