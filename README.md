@@ -115,15 +115,16 @@ Replace `COMx` with the port shown by `arduino-cli board list`.
 | OUT_DOWNRES | 7 | output |
 | OUT_CANCEL | 8 | output |
 | OUT_BRAKE | 9 | output |
-| OUT_NAV_VOLUP | 13 | output to PhotoMOS |
-| OUT_NAV_VOLDOWN | 14 | output to PhotoMOS |
-| OUT_NAV_SEEKPLUS | 15 | output to PhotoMOS |
-| OUT_NAV_SEEKMINUS | 16 | output to PhotoMOS |
-| OUT_NAV_MODE | 17 | output to PhotoMOS |
+| OUT_NAV_VOLUP | 35 | output to PhotoMOS |
+| OUT_NAV_VOLDOWN | 36 | output to PhotoMOS |
+| OUT_NAV_SEEKPLUS | 37 | output to PhotoMOS |
+| OUT_NAV_SEEKMINUS | 38 | output to PhotoMOS |
+| OUT_NAV_MODE | 39 | output to PhotoMOS |
 
 L/R steering buttons share `ADC_STEER`. R-side buttons drive cruise outputs. L-side buttons drive ATOTO KEY1 resistor selection through hardware resistors and PhotoMOS switches.
 
 ATOTO uses two wires: `KEY1` and `GND`. The firmware only turns one `OUT_NAV_*` GPIO ON at a time; the resistor value is selected by the external resistor + PhotoMOS hardware.
+The default pin map targets the Freenove ESP32-S3 Board Lite shown by the user. Avoid `GPIO0`, `GPIO19`, `GPIO20`, `GPIO45`, `GPIO46`, and `GPIO48` unless the board design intentionally uses them.
 
 ## Safety Logic
 
