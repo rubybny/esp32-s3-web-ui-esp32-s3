@@ -232,6 +232,8 @@
 
     .status-pill[data-output] {
       cursor: pointer;
+      touch-action: none;
+      user-select: none;
       transition: transform 0.16s ease, box-shadow 0.16s ease;
     }
 
@@ -1145,11 +1147,7 @@
       });
 
       document.querySelectorAll("[data-output]").forEach((button) => {
-        button.addEventListener("click", async () => {
-          const name = button.dataset.output;
-          const nextState = !Boolean(currentStatus.outputs?.[name]);
-          renderStatus(await apiSetOutput(name, nextState));
-        });
+        bindOutputControl(button);
       });
 
       document.getElementById("exportConfig").addEventListener("click", () => {
@@ -1199,6 +1197,38 @@
         renderAll();
         showMessage("systemMessage", "初期化しました");
       });
+    }
+
+    function bindOutputControl(button) {
+      const name = button.dataset.output;
+      if (name === "main") {
+        button.addEventListener("click", async () => {
+          const nextState = !Boolean(currentStatus.outputs?.[name]);
+          renderStatus(await apiSetOutput(name, nextState));
+        });
+        return;
+      }
+
+      let pressing = false;
+      const setPressed = async (state) => {
+        if (pressing === state) return;
+        pressing = state;
+        renderStatus(await apiSetOutput(name, state));
+      };
+
+      button.addEventListener("pointerdown", async (event) => {
+        event.preventDefault();
+        button.setPointerCapture?.(event.pointerId);
+        await setPressed(true);
+      });
+      button.addEventListener("pointerup", async (event) => {
+        event.preventDefault();
+        button.releasePointerCapture?.(event.pointerId);
+        await setPressed(false);
+      });
+      button.addEventListener("pointercancel", () => setPressed(false));
+      button.addEventListener("pointerleave", () => setPressed(false));
+      button.addEventListener("lostpointercapture", () => setPressed(false));
     }
 
     async function startStatusLoop() {
