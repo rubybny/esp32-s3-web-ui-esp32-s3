@@ -8,6 +8,22 @@ bool outUpSet = false;
 bool outDownRes = false;
 bool outCancel = false;
 bool outBrake = false;
+
+void writeOutputPins() {
+  digitalWrite(Pins::OUT_MAIN, outMain ? HIGH : LOW);
+  digitalWrite(Pins::OUT_UPSET, outUpSet ? HIGH : LOW);
+  digitalWrite(Pins::OUT_DOWNRES, outDownRes ? HIGH : LOW);
+  digitalWrite(Pins::OUT_CANCEL, outCancel ? HIGH : LOW);
+  digitalWrite(Pins::OUT_BRAKE, outBrake ? HIGH : LOW);
+}
+
+void clearOutputStates() {
+  outMain = false;
+  outUpSet = false;
+  outDownRes = false;
+  outCancel = false;
+  outBrake = false;
+}
 }
 
 void setupOutputPins() {
@@ -33,38 +49,29 @@ bool getOutputState(const String& name) {
 }
 
 bool setOutputState(const String& name, bool state) {
+  if (!isValidOutputName(name)) return false;
+
+  if (state) {
+    clearOutputStates();
+  }
+
   if (name == "main") {
     outMain = state;
-    digitalWrite(Pins::OUT_MAIN, state ? HIGH : LOW);
-    return true;
-  }
-  if (name == "upSet") {
+  } else if (name == "upSet") {
     outUpSet = state;
-    digitalWrite(Pins::OUT_UPSET, state ? HIGH : LOW);
-    return true;
-  }
-  if (name == "downRes") {
+  } else if (name == "downRes") {
     outDownRes = state;
-    digitalWrite(Pins::OUT_DOWNRES, state ? HIGH : LOW);
-    return true;
-  }
-  if (name == "cancel") {
+  } else if (name == "cancel") {
     outCancel = state;
-    digitalWrite(Pins::OUT_CANCEL, state ? HIGH : LOW);
-    return true;
-  }
-  if (name == "brakeOut") {
+  } else if (name == "brakeOut") {
     outBrake = state;
-    digitalWrite(Pins::OUT_BRAKE, state ? HIGH : LOW);
-    return true;
   }
-  return false;
+
+  writeOutputPins();
+  return true;
 }
 
 void resetOutputs() {
-  setOutputState("main", false);
-  setOutputState("upSet", false);
-  setOutputState("downRes", false);
-  setOutputState("cancel", false);
-  setOutputState("brakeOut", false);
+  clearOutputStates();
+  writeOutputPins();
 }

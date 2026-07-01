@@ -5,6 +5,7 @@
 #include "ConfigStore.h"
 #include "Outputs.h"
 #include "Pins.h"
+#include "SteeringControl.h"
 
 namespace {
 float rawToVoltage(int raw) {
@@ -29,7 +30,7 @@ String buildStatusJson() {
 
   StaticJsonDocument<512> doc;
   doc["adc"] = adc;
-  doc["button"] = detectButton(adc);
+  doc["button"] = getDebouncedSteeringButton();
   doc["vin"] = round2(rawToVoltage(analogRead(Pins::ADC_VIN)));
   doc["vout"] = round2(rawToVoltage(analogRead(Pins::ADC_VOUT)));
   doc["brakeIn"] = digitalRead(Pins::BRAKE_IN) == Pins::BRAKE_IN_ACTIVE_LEVEL;

@@ -90,6 +90,7 @@ Replace `COMx` with the port shown by `arduino-cli board list`.
 4. Confirm Monitor values update.
 5. Confirm `Main` outputs for the configured hold time.
 6. Confirm `UpSet`, `DownRes`, `Cancel`, and `BrakeOut` output only while pressed from the UI.
+7. Confirm only one output can be ON at a time.
 
 ## API
 
@@ -116,3 +117,11 @@ Replace `COMx` with the port shown by `arduino-cli board list`.
 | OUT_BRAKE | 9 | output |
 
 L/R steering buttons share `ADC_STEER`. R-side cruise outputs are implemented. L-side learned values are stored for later ATOTO steering output work.
+
+## Safety Logic
+
+- Output GPIOs are mutually exclusive. Turning one output ON turns all other outputs OFF.
+- Steering ADC detection is debounced for 60 ms before changing outputs.
+- `UpSet`, `DownRes`, and `Cancel` are momentary from steering ADC: output stays ON only while the debounced button is held.
+- `Main` starts one hold pulse using `timing.mainHoldMs`; it does not retrigger until the button is released.
+- When `BrakeIn` is active, automatic steering outputs are cleared and all output GPIOs are turned OFF.
