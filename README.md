@@ -39,7 +39,19 @@ The frontend is stored here:
 CruiseController/data/index.html
 ```
 
-Upload the LittleFS data folder after flashing the sketch.
+Build the LittleFS image:
+
+```powershell
+& "$env:LOCALAPPDATA\Arduino15\packages\esp32\tools\mklittlefs\4.0.2-db0513a\mklittlefs.exe" -c CruiseController\data -b 4096 -p 256 -s 0x160000 build\littlefs.bin
+```
+
+Upload it to the default ESP32-S3 data partition:
+
+```powershell
+.\tools\upload_littlefs.ps1 -Port COMx
+```
+
+Replace `COMx` with the port shown by `arduino-cli board list`.
 
 ## API
 
