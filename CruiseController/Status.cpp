@@ -3,6 +3,7 @@
 #include <ArduinoJson.h>
 
 #include "ConfigStore.h"
+#include "NaviOutput.h"
 #include "Outputs.h"
 #include "Pins.h"
 #include "SteeringControl.h"
@@ -41,6 +42,12 @@ String buildStatusJson() {
   outputs["downRes"] = getOutputState("downRes");
   outputs["cancel"] = getOutputState("cancel");
   outputs["brakeOut"] = getOutputState("brakeOut");
+  JsonObject navi = outputs["navi"].to<JsonObject>();
+  navi["volUp"] = getNaviOutputState("VolUp");
+  navi["volDown"] = getNaviOutputState("VolDown");
+  navi["seekPlus"] = getNaviOutputState("SeekPlus");
+  navi["seekMinus"] = getNaviOutputState("SeekMinus");
+  navi["mode"] = getNaviOutputState("Mode");
 
   String json;
   serializeJson(doc, json);

@@ -859,7 +859,14 @@
           upSet: Boolean(status.outputs?.upSet),
           downRes: Boolean(status.outputs?.downRes),
           cancel: Boolean(status.outputs?.cancel),
-          brakeOut: Boolean(status.outputs?.brakeOut)
+          brakeOut: Boolean(status.outputs?.brakeOut),
+          navi: {
+            volUp: Boolean(status.outputs?.navi?.volUp),
+            volDown: Boolean(status.outputs?.navi?.volDown),
+            seekPlus: Boolean(status.outputs?.navi?.seekPlus),
+            seekMinus: Boolean(status.outputs?.navi?.seekMinus),
+            mode: Boolean(status.outputs?.navi?.mode)
+          }
         },
         currents: status.currentMa || status.currents || {}
       };
@@ -978,7 +985,14 @@
           upSet: false,
           downRes: false,
           cancel: false,
-          brakeOut: false
+          brakeOut: false,
+          navi: {
+            volUp: button === "VolUp",
+            volDown: button === "VolDown",
+            seekPlus: button === "SeekPlus",
+            seekMinus: button === "SeekMinus",
+            mode: button === "Mode"
+          }
         },
         currents: {
           brakeIn: 0,
@@ -1031,11 +1045,20 @@
       setPill("outDownRes", status.outputs.downRes);
       setPill("outCancel", status.outputs.cancel);
       setPill("outBrake", status.outputs.brakeOut);
-      renderLeftMonitor(status.button);
+      renderLeftMonitor(status.outputs.navi, status.button);
       renderCurrents(status.currents || status.currentMa || {});
     }
 
-    function renderLeftMonitor(buttonName) {
+    function renderLeftMonitor(naviOutputs, buttonName) {
+      if (naviOutputs) {
+        setPill("monLVolUp", naviOutputs.volUp);
+        setPill("monLVolDown", naviOutputs.volDown);
+        setPill("monLSeekPlus", naviOutputs.seekPlus);
+        setPill("monLSeekMinus", naviOutputs.seekMinus);
+        setPill("monLMode", naviOutputs.mode);
+        return;
+      }
+
       const current = String(buttonName || "NONE");
       setPill("monLVolUp", current === "VolUp");
       setPill("monLVolDown", current === "VolDown");

@@ -115,8 +115,15 @@ Replace `COMx` with the port shown by `arduino-cli board list`.
 | OUT_DOWNRES | 7 | output |
 | OUT_CANCEL | 8 | output |
 | OUT_BRAKE | 9 | output |
+| OUT_NAV_VOLUP | 13 | output to PhotoMOS |
+| OUT_NAV_VOLDOWN | 14 | output to PhotoMOS |
+| OUT_NAV_SEEKPLUS | 15 | output to PhotoMOS |
+| OUT_NAV_SEEKMINUS | 16 | output to PhotoMOS |
+| OUT_NAV_MODE | 17 | output to PhotoMOS |
 
-L/R steering buttons share `ADC_STEER`. R-side cruise outputs are implemented. L-side learned values are stored for later ATOTO steering output work.
+L/R steering buttons share `ADC_STEER`. R-side buttons drive cruise outputs. L-side buttons drive ATOTO KEY1 resistor selection through hardware resistors and PhotoMOS switches.
+
+ATOTO uses two wires: `KEY1` and `GND`. The firmware only turns one `OUT_NAV_*` GPIO ON at a time; the resistor value is selected by the external resistor + PhotoMOS hardware.
 
 ## Safety Logic
 
@@ -125,3 +132,5 @@ L/R steering buttons share `ADC_STEER`. R-side cruise outputs are implemented. L
 - `UpSet`, `DownRes`, and `Cancel` are momentary from steering ADC: output stays ON only while the debounced button is held.
 - `Main` starts one hold pulse using `timing.mainHoldMs`; it does not retrigger until the button is released.
 - When `BrakeIn` is active, automatic steering outputs are cleared and all output GPIOs are turned OFF.
+- ATOTO Navi outputs are mutually exclusive. `NONE` or any R-side button turns all Navi outputs OFF.
+- L-side Navi output turns cruise outputs OFF before selecting the KEY1 resistor.

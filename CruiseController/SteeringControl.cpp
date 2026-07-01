@@ -3,6 +3,7 @@
 #include <Arduino.h>
 
 #include "ConfigStore.h"
+#include "NaviOutput.h"
 #include "Outputs.h"
 #include "Pins.h"
 
@@ -45,6 +46,10 @@ void clearAutoOutputs() {
   setAutoMomentary("cancel", autoCancel, false);
 }
 
+bool isNaviButton(const String& button) {
+  return button == "VolUp" || button == "VolDown" || button == "SeekPlus" || button == "SeekMinus" || button == "Mode";
+}
+
 void setAutoMomentary(const String& outputName, bool& autoFlag, bool active) {
   if (active) {
     if (!autoFlag || !getOutputState(outputName)) {
@@ -71,6 +76,16 @@ void updateSteeringOutputs() {
   const String button = updateDebouncedButton(detectButton(adc), now);
 
   if (digitalRead(Pins::BRAKE_IN) == Pins::BRAKE_IN_ACTIVE_LEVEL) {
+    clearAutoOutputs();
+    resetNaviOutput();
+    mainPulseActive = false;
+    mainButtonWasDown = false;
+    resetOutputs();
+    return;
+  }
+
+  setNaviOutput(button);
+  if (isNaviButton(button)) {
     clearAutoOutputs();
     mainPulseActive = false;
     mainButtonWasDown = false;

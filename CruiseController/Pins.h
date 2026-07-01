@@ -13,6 +13,12 @@ constexpr uint8_t OUT_DOWNRES = 7;
 constexpr uint8_t OUT_CANCEL = 8;
 constexpr uint8_t OUT_BRAKE = 9;
 
+constexpr uint8_t OUT_NAV_VOLUP = 13;
+constexpr uint8_t OUT_NAV_VOLDOWN = 14;
+constexpr uint8_t OUT_NAV_SEEKPLUS = 15;
+constexpr uint8_t OUT_NAV_SEEKMINUS = 16;
+constexpr uint8_t OUT_NAV_MODE = 17;
+
 constexpr uint8_t BRAKE_IN_MODE = INPUT_PULLDOWN;
 constexpr uint8_t BRAKE_IN_ACTIVE_LEVEL = HIGH;
 }
