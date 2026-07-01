@@ -21,7 +21,7 @@ void setupStatusInputs() {
   pinMode(Pins::ADC_STEER, INPUT);
   pinMode(Pins::ADC_VIN, INPUT);
   pinMode(Pins::ADC_VOUT, INPUT);
-  pinMode(Pins::BRAKE_IN, INPUT_PULLUP);
+  pinMode(Pins::BRAKE_IN, Pins::BRAKE_IN_MODE);
 }
 
 String buildStatusJson() {
@@ -32,7 +32,7 @@ String buildStatusJson() {
   doc["button"] = detectButton(adc);
   doc["vin"] = round2(rawToVoltage(analogRead(Pins::ADC_VIN)));
   doc["vout"] = round2(rawToVoltage(analogRead(Pins::ADC_VOUT)));
-  doc["brakeIn"] = digitalRead(Pins::BRAKE_IN) == LOW;
+  doc["brakeIn"] = digitalRead(Pins::BRAKE_IN) == Pins::BRAKE_IN_ACTIVE_LEVEL;
 
   JsonObject outputs = doc["outputs"].to<JsonObject>();
   outputs["main"] = getOutputState("main");

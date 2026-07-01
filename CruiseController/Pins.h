@@ -12,4 +12,7 @@ constexpr uint8_t OUT_UPSET = 6;
 constexpr uint8_t OUT_DOWNRES = 7;
 constexpr uint8_t OUT_CANCEL = 8;
 constexpr uint8_t OUT_BRAKE = 9;
+
+constexpr uint8_t BRAKE_IN_MODE = INPUT_PULLDOWN;
+constexpr uint8_t BRAKE_IN_ACTIVE_LEVEL = HIGH;
 }
