@@ -123,3 +123,12 @@ String detectButton(int adc) {
 
   return bestDiff <= DETECT_THRESHOLD ? String(bestName) : String("NONE");
 }
+
+uint32_t getTimingMs(const char* key, uint32_t fallback) {
+  StaticJsonDocument<1024> doc;
+  if (!parseConfig(doc)) return fallback;
+
+  uint32_t value = doc["timing"][key] | fallback;
+  if (value == 0 || value > 10000) return fallback;
+  return value;
+}

@@ -13,3 +13,4 @@ void resetConfig();
 bool setLearnedValue(const char* side, const char* name, int adc);
 bool isValidLearnTarget(const char* side, const char* name);
 String detectButton(int adc);
+uint32_t getTimingMs(const char* key, uint32_t fallback);

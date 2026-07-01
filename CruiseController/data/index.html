@@ -715,6 +715,7 @@
         rCancel: 200,
         rUpSet: 200,
         rDownRes: 200,
+        brakeOut: 300,
         lVolUp: 100,
         lVolDown: 100,
         lSeekPlus: 100,
@@ -794,6 +795,13 @@
       };
     }
 
+    function normalizeAnyConfig(next) {
+      if (next?.learned?.L || next?.learned?.R || next?.timing) {
+        return fromDeviceConfig(next);
+      }
+      return normalizeConfig(next);
+    }
+
     function normalizePressMs(value, fallback = 0) {
       const numeric = Number(value);
       if (!Number.isFinite(numeric)) return fallback;
@@ -850,7 +858,7 @@
     }
 
     async function apiSaveConfig(nextConfig) {
-      config = normalizeConfig(nextConfig);
+      config = normalizeAnyConfig(nextConfig);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
       if (shouldUseDeviceApi()) {
         await apiFetchJson("/api/config", {
@@ -931,7 +939,7 @@
           cancelMs: local.pressMs.rCancel,
           upSetMs: local.pressMs.rUpSet,
           downResMs: local.pressMs.rDownRes,
-          brakeOutMs: 300
+          brakeOutMs: local.pressMs.brakeOut
         }
       };
     }
@@ -955,7 +963,8 @@
           rMain: timing.mainHoldMs,
           rCancel: timing.cancelMs,
           rUpSet: timing.upSetMs,
-          rDownRes: timing.downResMs
+          rDownRes: timing.downResMs,
+          brakeOut: timing.brakeOutMs
         }
       });
     }
@@ -1110,7 +1119,7 @@
     }
 
     function renderConfigJson() {
-      document.getElementById("configJson").value = JSON.stringify(config, null, 2);
+      document.getElementById("configJson").value = JSON.stringify(toDeviceConfig(config), null, 2);
     }
 
     function renderAll() {
@@ -1151,7 +1160,7 @@
       });
 
       document.getElementById("exportConfig").addEventListener("click", () => {
-        const blob = new Blob([JSON.stringify(config, null, 2)], { type: "application/json" });
+        const blob = new Blob([JSON.stringify(toDeviceConfig(config), null, 2)], { type: "application/json" });
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;

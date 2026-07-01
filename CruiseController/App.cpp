@@ -6,6 +6,7 @@
 #include "ConfigStore.h"
 #include "Outputs.h"
 #include "Status.h"
+#include "SteeringControl.h"
 #include "WebApp.h"
 
 void appSetup() {
@@ -24,5 +25,6 @@ void appSetup() {
 }
 
 void appLoop() {
+  updateSteeringOutputs();
   webAppLoop();
 }
