@@ -584,6 +584,32 @@
         </div>
 
         <div class="panel">
+          <h2>L</h2>
+          <div class="grid two grid three">
+            <div class="metric">
+              <div class="label">Vol+</div>
+              <div id="monLVolUp" class="status-pill">OFF</div>
+            </div>
+            <div class="metric">
+              <div class="label">Vol-</div>
+              <div id="monLVolDown" class="status-pill">OFF</div>
+            </div>
+            <div class="metric">
+              <div class="label">Seek+</div>
+              <div id="monLSeekPlus" class="status-pill">OFF</div>
+            </div>
+            <div class="metric">
+              <div class="label">Seek-</div>
+              <div id="monLSeekMinus" class="status-pill">OFF</div>
+            </div>
+            <div class="metric">
+              <div class="label">Mode</div>
+              <div id="monLMode" class="status-pill">OFF</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
           <h2>Outputs</h2>
           <div class="grid two grid three">
             <div class="metric">
@@ -969,12 +995,12 @@
       const labels = [
         ["Main", config.learned.rMain],
         ["Cancel", config.learned.rCancel],
-        ["Up/Set", config.learned.rUpSet],
-        ["Down/Res", config.learned.rDownRes],
+        ["UpSet", config.learned.rUpSet],
+        ["DownRes", config.learned.rDownRes],
         ["VolUp", config.learned.lVolUp],
         ["VolDown", config.learned.lVolDown],
-        ["Seek+", config.learned.lSeekPlus],
-        ["Seek-", config.learned.lSeekMinus],
+        ["SeekPlus", config.learned.lSeekPlus],
+        ["SeekMinus", config.learned.lSeekMinus],
         ["Mode", config.learned.lMode]
       ];
       const nearest = labels
@@ -1005,7 +1031,17 @@
       setPill("outDownRes", status.outputs.downRes);
       setPill("outCancel", status.outputs.cancel);
       setPill("outBrake", status.outputs.brakeOut);
+      renderLeftMonitor(status.button);
       renderCurrents(status.currents || status.currentMa || {});
+    }
+
+    function renderLeftMonitor(buttonName) {
+      const current = String(buttonName || "NONE");
+      setPill("monLVolUp", current === "VolUp");
+      setPill("monLVolDown", current === "VolDown");
+      setPill("monLSeekPlus", current === "SeekPlus");
+      setPill("monLSeekMinus", current === "SeekMinus");
+      setPill("monLMode", current === "Mode");
     }
 
     function renderCurrents(currents) {
