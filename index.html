@@ -61,7 +61,7 @@
       color: #8d1f1f;
     }
 
-    input[type="number"], textarea {
+    input[type="number"], select, textarea {
       width: 100%;
       min-height: 48px;
       border: 1px solid var(--line);
@@ -452,7 +452,7 @@
               <div class="label">出力時間</div>
               <div class="value small"><span id="pulseView">200</span> ms</div>
             </div>
-            <input id="pulseMs" type="number" min="50" max="5000" step="50" value="200">
+            <select id="pulseMs"></select>
           </div>
           <button id="saveConfig" class="primary" type="button" style="margin-top: 10px;">保存</button>
           <div id="controlMessage" class="message"></div>
@@ -545,11 +545,12 @@
     }
 
     function normalizeStatus(next) {
+      const pulseMs = Number(next?.pulseMs);
       const brake = Boolean(next?.outputs?.brake ?? next?.outputs?.brakeOut ?? next?.outputs?.cancel);
       return {
         adc: Number(next?.adc) || 0,
         button: String(next?.button || "NONE"),
-        pulseMs: Number(next?.pulseMs) || config.pulseMs || 200,
+        pulseMs: Number.isFinite(pulseMs) ? pulseMs : config.pulseMs,
         outputs: {
           main: Boolean(next?.outputs?.main),
           res: Boolean(next?.outputs?.res ?? next?.outputs?.upSet),
@@ -560,8 +561,9 @@
     }
 
     function normalizeConfig(next) {
+      const pulseMs = Number(next?.pulseMs);
       return {
-        pulseMs: Number(next?.pulseMs) || defaultConfig.pulseMs,
+        pulseMs: Number.isFinite(pulseMs) ? Math.min(5000, Math.max(0, pulseMs)) : defaultConfig.pulseMs,
         learned: {
           main: Number.isFinite(Number(next?.learned?.main)) ? Number(next.learned.main) : defaultConfig.learned.main,
           cancel: Number.isFinite(Number(next?.learned?.cancel)) ? Number(next.learned.cancel) : defaultConfig.learned.cancel,
@@ -579,6 +581,17 @@
       const el = document.getElementById(id);
       el.textContent = isOn ? "ON" : "OFF";
       el.classList.toggle("on", Boolean(isOn));
+    }
+
+    function populatePulseOptions() {
+      const select = document.getElementById("pulseMs");
+      select.innerHTML = "";
+      for (let ms = 0; ms <= 5000; ms += 100) {
+        const option = document.createElement("option");
+        option.value = String(ms);
+        option.textContent = `${ms} ms`;
+        select.appendChild(option);
+      }
     }
 
     function render() {
@@ -618,7 +631,7 @@
       const value = Number(document.getElementById("pulseMs").value);
       config = normalizeConfig({
         ...config,
-        pulseMs: Math.min(5000, Math.max(50, Number.isFinite(value) ? value : 200))
+        pulseMs: Math.min(5000, Math.max(0, Number.isFinite(value) ? value : 200))
       });
       localStorage.setItem("cc-s3.config", JSON.stringify(config));
       if (shouldUseDeviceApi()) {
@@ -754,7 +767,7 @@
       document.getElementById("applyJson").addEventListener("click", async () => {
         try {
           const next = JSON.parse(document.getElementById("configJson").value);
-          config = { pulseMs: Number(next.pulseMs) || 200 };
+          config = normalizeConfig(next);
           await saveConfig();
           showMessage("systemMessage", "JSONを反映しました");
         } catch {
@@ -773,6 +786,7 @@
       });
     }
 
+    populatePulseOptions();
     bindEvents();
     render();
     loadConfig().then(loadStatus).catch(() => {});

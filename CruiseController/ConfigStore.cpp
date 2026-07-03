@@ -45,7 +45,7 @@ bool parseConfig(StaticJsonDocument<1024>& doc) {
   if (!doc["pulseMs"].is<uint32_t>()) return false;
 
   uint32_t pulseMs = doc["pulseMs"] | DEFAULT_PULSE_MS;
-  if (pulseMs == 0 || pulseMs > MAX_PULSE_MS) {
+  if (pulseMs > MAX_PULSE_MS) {
     doc["pulseMs"] = DEFAULT_PULSE_MS;
   }
 
@@ -63,7 +63,7 @@ void saveConfigJson(const String& json) {
   if (err) return;
 
   uint32_t pulseMs = doc["pulseMs"] | DEFAULT_PULSE_MS;
-  if (pulseMs == 0 || pulseMs > MAX_PULSE_MS) {
+  if (pulseMs > MAX_PULSE_MS) {
     pulseMs = DEFAULT_PULSE_MS;
   }
 

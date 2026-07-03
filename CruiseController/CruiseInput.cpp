@@ -13,7 +13,7 @@ String rawButton = "NONE";
 String candidateButton = "NONE";
 String stableButton = "NONE";
 String displayButton = "NONE";
-String lastPulseButton = "NONE";
+String activeInputOutput = "";
 uint32_t candidateSince = 0;
 
 bool elapsed(uint32_t now, uint32_t target) {
@@ -83,17 +83,19 @@ void updateCruiseInput() {
   displayButton = rawButton != "NONE" ? rawButton : button;
 
   if (rawButton == "NONE") {
-    lastPulseButton = "NONE";
+    if (activeInputOutput.length() > 0) {
+      resetOutputs();
+      activeInputOutput = "";
+    }
     return;
   }
 
-  if (rawButton == lastPulseButton) return;
-
   const String outputName = outputNameForButton(rawButton);
   if (outputName.length() == 0) return;
+  if (outputName == activeInputOutput) return;
 
-  pulseOutput(outputName, getPulseMs());
-  lastPulseButton = rawButton;
+  setOutputState(outputName, true);
+  activeInputOutput = outputName;
 }
 
 int getCruiseAdc() {
