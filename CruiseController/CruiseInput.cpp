@@ -6,11 +6,13 @@
 
 namespace {
 constexpr uint32_t DEBOUNCE_MS = 30;
-constexpr int DETECT_THRESHOLD = 120;
+constexpr int DETECT_THRESHOLD = 180;
 
 int currentAdc = 4095;
+String rawButton = "NONE";
 String candidateButton = "NONE";
 String stableButton = "NONE";
+String displayButton = "NONE";
 String lastPulseButton = "NONE";
 uint32_t candidateSince = 0;
 
@@ -76,20 +78,22 @@ void setupCruiseInput() {
 
 void updateCruiseInput() {
   currentAdc = analogRead(Pins::ADC_CRUISE);
-  const String button = updateDebouncedButton(detectCruiseButton(currentAdc), millis());
+  rawButton = detectCruiseButton(currentAdc);
+  const String button = updateDebouncedButton(rawButton, millis());
+  displayButton = rawButton != "NONE" ? rawButton : button;
 
-  if (button == "NONE") {
+  if (rawButton == "NONE") {
     lastPulseButton = "NONE";
     return;
   }
 
-  if (button == lastPulseButton) return;
+  if (rawButton == lastPulseButton) return;
 
-  const String outputName = outputNameForButton(button);
+  const String outputName = outputNameForButton(rawButton);
   if (outputName.length() == 0) return;
 
   pulseOutput(outputName, getPulseMs());
-  lastPulseButton = button;
+  lastPulseButton = rawButton;
 }
 
 int getCruiseAdc() {
@@ -97,5 +101,5 @@ int getCruiseAdc() {
 }
 
 String getCruiseButton() {
-  return stableButton;
+  return displayButton;
 }
