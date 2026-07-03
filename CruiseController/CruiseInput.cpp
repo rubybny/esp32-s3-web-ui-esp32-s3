@@ -5,7 +5,7 @@
 #include "Pins.h"
 
 namespace {
-constexpr uint32_t DEBOUNCE_MS = 60;
+constexpr uint32_t DEBOUNCE_MS = 30;
 constexpr int DETECT_THRESHOLD = 70;
 
 int currentAdc = 4095;

@@ -15,7 +15,7 @@
 namespace {
 constexpr const char* AP_SSID = "CC-S3";
 constexpr const char* AP_PASS = "ccs3setup";
-constexpr uint32_t WS_STATUS_INTERVAL_MS = 500;
+constexpr uint32_t WS_STATUS_INTERVAL_MS = 100;
 
 IPAddress apIp(192, 168, 4, 1);
 IPAddress gateway(192, 168, 4, 1);
