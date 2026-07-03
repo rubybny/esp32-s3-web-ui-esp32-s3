@@ -172,11 +172,12 @@
 
     .monitor-section {
       padding: 2px 2px 0;
-      border-bottom: 1px solid var(--line);
     }
 
-    .monitor-section:last-child {
-      border-bottom: 0;
+    .monitor-section + .monitor-section {
+      border-top: 1px solid var(--line);
+      margin-top: 4px;
+      padding-top: 12px;
     }
 
     .monitor-section h2 {
@@ -200,7 +201,6 @@
       gap: 18px;
       min-height: 62px;
       padding: 11px 0;
-      border-top: 1px solid var(--line);
     }
 
     .readout .label {
@@ -209,6 +209,7 @@
 
     .readout .value {
       font-size: 28px;
+      font-weight: 430;
       text-align: right;
     }
 
@@ -251,10 +252,16 @@
     }
 
     .steering-status .value {
-      font-size: 30px;
+      font-size: 24px;
+      font-weight: 480;
+      letter-spacing: .01em;
     }
 
     .learn-action {
+      position: absolute;
+      top: 16px;
+      right: 18px;
+      z-index: 4;
       min-height: 42px;
       min-width: 86px;
       padding: 8px 12px;
@@ -413,7 +420,7 @@
   <div class="app">
     <nav class="tabs" aria-label="画面切り替え">
       <button class="tab-button active" data-tab="monitor" type="button">Monitor</button>
-      <button class="tab-button" data-tab="control" type="button">Control</button>
+      <button class="tab-button" data-tab="control" type="button">Remote</button>
       <button class="tab-button" data-tab="system" type="button">System</button>
     </nav>
 
@@ -460,15 +467,14 @@
         <div class="panel">
           <div class="steering-status">
             <div>
-              <div class="label">ADCin living</div>
+              <div class="label">ADCIn</div>
               <div id="controlAdc" class="value">0</div>
             </div>
-            <button id="learnButton" class="learn-action" type="button">Learn</button>
           </div>
           <div class="switch-face">
+            <button id="learnButton" class="learn-action" type="button">Learn</button>
             <div id="cruiseSwitches" class="switch-grid"></div>
           </div>
-          <div id="controlMessage" class="message"></div>
         </div>
       </section>
 
@@ -607,6 +613,11 @@
       el.classList.toggle("on", Boolean(isOn));
     }
 
+    function setControlMessage(message) {
+      const el = document.getElementById("controlMessage");
+      if (el) el.textContent = message;
+    }
+
     function pulseOptionsHtml(key) {
       let html = "";
       const selectedMs = normalizeMs(config.timing?.[key], config.pulseMs);
@@ -688,7 +699,7 @@
       }
       learning = false;
       render();
-      document.getElementById("controlMessage").textContent = `${name.toUpperCase()} ADC ${status.adc}`;
+      setControlMessage("");
     }
 
     function pulse(name) {
@@ -709,7 +720,7 @@
     function handleSwitchPress(name) {
       if (learning) {
         learnSwitch(name).catch(() => {
-          document.getElementById("controlMessage").textContent = "学習に失敗しました";
+          setControlMessage("学習に失敗しました");
         });
         return;
       }
@@ -743,7 +754,7 @@
         select.addEventListener("change", (event) => {
           event.stopPropagation();
           saveConfig(event.currentTarget.dataset.pulseMs, event.currentTarget.value).catch(() => {
-            document.getElementById("controlMessage").textContent = "保存に失敗しました";
+            setControlMessage("保存に失敗しました");
           });
         });
       });
@@ -788,7 +799,7 @@
         learning = !learning;
         document.getElementById("cruiseSwitches").dataset.renderKey = "";
         renderCruiseSwitches();
-        document.getElementById("controlMessage").textContent = learning ? "学習する項目を押してください" : "";
+        setControlMessage("");
       });
 
       document.getElementById("reloadConfig").addEventListener("click", () => {
