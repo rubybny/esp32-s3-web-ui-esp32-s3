@@ -3,20 +3,23 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>CC-S3</title>
+  <title>CC-S3 Cruise Unit</title>
   <style>
     :root {
       color-scheme: light;
-      --bg: #f5f6f8;
+      --bg: #f6f8fb;
       --panel: #ffffff;
-      --ink: #20242b;
-      --muted: #6d7480;
-      --line: #dfe3e8;
-      --accent: #146ef5;
-      --active: #18a058;
-      --danger: #d64242;
-      --shadow: 0 12px 30px rgba(20, 28, 40, .08);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --panel-2: #f8fafc;
+      --line: #dde5ee;
+      --text: #17202c;
+      --muted: #637083;
+      --accent: #2563eb;
+      --danger: #dc2626;
+      --ok: #16a34a;
+      --off: #d5dde6;
+      --radius: 8px;
+      --shadow: 0 12px 28px rgba(17, 24, 39, .08);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
     * { box-sizing: border-box; }
@@ -24,329 +27,342 @@
     body {
       margin: 0;
       min-height: 100vh;
-      color: var(--ink);
       background: var(--bg);
-      -webkit-tap-highlight-color: transparent;
+      color: var(--text);
+      font-size: 18px;
+      line-height: 1.45;
     }
 
-    button, input {
-      font: inherit;
-    }
+    button, input, textarea { font: inherit; }
 
     button {
-      border: 0;
+      min-height: 48px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #ffffff;
+      color: var(--text);
+      padding: 12px 14px;
+      font-weight: 500;
+      cursor: pointer;
       touch-action: manipulation;
     }
 
+    button:active { transform: translateY(1px); }
+
+    button.primary {
+      border-color: rgba(37, 99, 235, .52);
+      background: var(--accent);
+      color: #f8fdff;
+    }
+
+    button.danger {
+      border-color: rgba(220, 38, 38, .75);
+      background: #fee2e2;
+      color: #8d1f1f;
+    }
+
+    input[type="number"], textarea {
+      width: 100%;
+      min-height: 48px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #ffffff;
+      color: var(--text);
+      padding: 12px;
+    }
+
+    textarea {
+      min-height: 190px;
+      resize: vertical;
+      font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+      font-size: 14px;
+      line-height: 1.5;
+      white-space: pre;
+    }
+
     .app {
-      width: min(760px, 100%);
+      width: min(980px, 100%);
       margin: 0 auto;
-      padding: env(safe-area-inset-top) 14px 24px;
+      padding: calc(14px + env(safe-area-inset-top)) 14px calc(24px + env(safe-area-inset-bottom));
     }
 
     .tabs {
       position: sticky;
       top: 0;
-      z-index: 5;
+      z-index: 20;
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
-      padding: 12px 0;
-      background: rgba(245, 246, 248, .92);
-      backdrop-filter: blur(14px);
+      gap: 6px;
+      padding: 8px 0 12px;
+      background: rgba(246, 248, 251, .92);
+      backdrop-filter: blur(12px);
     }
 
-    .tab {
-      min-height: 46px;
-      border-radius: 999px;
+    .tab-button {
+      min-height: 52px;
+      padding: 8px 4px;
       color: var(--muted);
-      background: transparent;
+      background: #ffffff;
+      box-shadow: 0 1px 4px rgba(17, 24, 39, .05);
     }
 
-    .tab.active {
-      color: #fff;
-      background: var(--ink);
-    }
-
-    .view {
-      display: none;
-      padding-top: 8px;
-    }
-
-    .view.active {
-      display: block;
-    }
-
-    .section {
-      padding: 18px 0;
-      border-bottom: 1px solid var(--line);
-    }
-
-    .section:last-child {
-      border-bottom: 0;
-    }
-
-    .section-title {
-      margin: 0 0 14px;
-      color: var(--muted);
-      font-size: 13px;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-    }
-
-    .status-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px;
-    }
-
-    .status {
-      min-height: 86px;
-      padding: 15px;
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      background: var(--panel);
-      box-shadow: var(--shadow);
-    }
-
-    .status .name {
-      color: var(--muted);
-      font-size: 13px;
-    }
-
-    .status .state {
-      margin-top: 12px;
-      font-size: 24px;
-      font-weight: 500;
-    }
-
-    .status.on {
-      border-color: rgba(24, 160, 88, .35);
-      background: #f0fff7;
-    }
-
-    .status.on .state {
-      color: var(--active);
-    }
-
-    .pulse-panel {
-      display: grid;
-      gap: 14px;
-      padding: 16px;
-      border: 1px solid var(--line);
-      border-radius: 22px;
-      background: var(--panel);
-      box-shadow: var(--shadow);
-    }
-
-    .field {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 14px;
-    }
-
-    .field label {
-      color: var(--muted);
-      font-size: 14px;
-    }
-
-    .field input {
-      width: 132px;
-      min-height: 44px;
-      padding: 0 12px;
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      color: var(--ink);
-      background: #fff;
-      text-align: right;
-    }
-
-    .controls {
-      display: grid;
-      gap: 12px;
-    }
-
-    .action {
-      min-height: 76px;
-      border-radius: 22px;
-      color: #fff;
-      background: var(--ink);
-      box-shadow: var(--shadow);
-      font-size: 23px;
-      font-weight: 500;
-      transition: transform .08s ease, background .12s ease;
-    }
-
-    .action:active {
-      transform: scale(.985);
+    .tab-button.active {
+      color: #ffffff;
+      border-color: var(--accent);
       background: var(--accent);
     }
 
-    .action.cancel {
-      background: var(--danger);
+    main, .view {
+      display: grid;
+      gap: 14px;
     }
 
-    .meta {
+    .view { display: none; }
+    .view.active { display: grid; }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      padding: 14px;
+    }
+
+    .panel h2 {
+      margin: 0 0 12px;
+      font-size: 21px;
+      font-weight: 540;
+      letter-spacing: 0;
+    }
+
+    .grid {
       display: grid;
       gap: 10px;
+    }
+
+    .grid.two {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .metric {
+      display: grid;
+      min-height: 86px;
+      align-content: space-between;
+      gap: 8px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel-2);
+      padding: 12px;
+    }
+
+    .label {
       color: var(--muted);
       font-size: 14px;
+      font-weight: 500;
     }
 
-    .row {
-      display: flex;
-      justify-content: space-between;
-      gap: 14px;
-      padding: 13px 0;
-      border-bottom: 1px solid var(--line);
+    .value {
+      overflow-wrap: anywhere;
+      font-size: 26px;
+      font-weight: 540;
+      line-height: 1.1;
     }
 
-    .row:last-child {
-      border-bottom: 0;
+    .value.small { font-size: 20px; }
+
+    .status-pill {
+      display: inline-grid;
+      place-items: center;
+      width: fit-content;
+      min-width: 70px;
+      min-height: 34px;
+      border-radius: 999px;
+      padding: 5px 11px;
+      background: var(--off);
+      color: #334155;
+      font-size: 16px;
+      font-weight: 520;
     }
 
-    pre {
-      overflow: auto;
-      margin: 0;
-      padding: 14px;
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      background: #fff;
-      color: #343942;
-      font-size: 12px;
-      line-height: 1.45;
+    .status-pill.on {
+      background: var(--ok);
+      color: #ffffff;
     }
 
-    .system-buttons {
+    .control-grid {
+      display: grid;
+      gap: 10px;
+    }
+
+    .control-button {
+      min-height: 74px;
+      font-size: 22px;
+      background: #ffffff;
+    }
+
+    .control-button.cancel {
+      border-color: rgba(220, 38, 38, .28);
+      background: #fff7f7;
+      color: #9f1d1d;
+    }
+
+    .field-row {
+      display: grid;
+      grid-template-columns: 1fr 130px;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .json-actions {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 10px;
+      margin-top: 10px;
     }
 
-    .small-button {
-      min-height: 48px;
-      border-radius: 16px;
-      color: #fff;
-      background: var(--accent);
+    .message {
+      min-height: 26px;
+      color: var(--accent);
+      font-size: 15px;
+      font-weight: 500;
+      margin-top: 10px;
     }
 
-    .small-button.danger {
-      background: var(--danger);
-    }
-
-    .toast {
-      min-height: 22px;
-      margin-top: 12px;
-      color: var(--muted);
-      font-size: 13px;
-    }
-
-    @media (min-width: 560px) {
-      .controls {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-
-      .action.cancel {
-        grid-column: span 2;
-      }
-
-      .status-grid {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-      }
+    @media (min-width: 720px) {
+      .app { padding-inline: 22px; }
+      .grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .grid.four, .control-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
     }
   </style>
 </head>
 <body>
-  <main class="app">
-    <nav class="tabs">
-      <button class="tab active" data-tab="monitor" type="button">Monitor</button>
-      <button class="tab" data-tab="control" type="button">Control</button>
-      <button class="tab" data-tab="system" type="button">System</button>
+  <div class="app">
+    <nav class="tabs" aria-label="画面切り替え">
+      <button class="tab-button active" data-tab="monitor" type="button">Monitor</button>
+      <button class="tab-button" data-tab="control" type="button">Control</button>
+      <button class="tab-button" data-tab="system" type="button">System</button>
     </nav>
 
-    <section id="monitor" class="view active">
-      <div class="section">
-        <h2 class="section-title">Outputs</h2>
-        <div class="status-grid">
-          <div class="status" data-output-card="main"><div class="name">MAIN</div><div class="state">OFF</div></div>
-          <div class="status" data-output-card="res"><div class="name">RES+</div><div class="state">OFF</div></div>
-          <div class="status" data-output-card="set"><div class="name">SET-</div><div class="state">OFF</div></div>
-          <div class="status" data-output-card="cancel"><div class="name">CANCEL</div><div class="state">OFF</div></div>
+    <main>
+      <section id="monitor" class="view active">
+        <div class="panel">
+          <h2>Input</h2>
+          <div class="grid two">
+            <div class="metric">
+              <div class="label">ADC GPIO4</div>
+              <div id="statusAdc" class="value">0</div>
+            </div>
+            <div class="metric">
+              <div class="label">Button</div>
+              <div id="statusButton" class="value small">NONE</div>
+            </div>
+          </div>
         </div>
-      </div>
-      <div class="section">
-        <h2 class="section-title">Connection</h2>
-        <div class="meta">
-          <div class="row"><span>ADC GPIO4</span><span id="adcView">0</span></div>
-          <div class="row"><span>Button</span><span id="buttonView">NONE</span></div>
-          <div class="row"><span>WebSocket</span><span id="wsState">Connecting</span></div>
-          <div class="row"><span>Pulse</span><span><span id="pulseView">200</span> ms</span></div>
-        </div>
-      </div>
-    </section>
 
-    <section id="control" class="view">
-      <div class="section">
-        <h2 class="section-title">Pulse</h2>
-        <div class="pulse-panel">
-          <div class="field">
-            <label for="pulseMs">出力時間</label>
+        <div class="panel">
+          <h2>Outputs</h2>
+          <div class="grid two four">
+            <div class="metric">
+              <div class="label">MAIN</div>
+              <div id="outMain" class="status-pill">OFF</div>
+            </div>
+            <div class="metric">
+              <div class="label">RES+</div>
+              <div id="outRes" class="status-pill">OFF</div>
+            </div>
+            <div class="metric">
+              <div class="label">SET-</div>
+              <div id="outSet" class="status-pill">OFF</div>
+            </div>
+            <div class="metric">
+              <div class="label">CANCEL</div>
+              <div id="outCancel" class="status-pill">OFF</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="control" class="view">
+        <div class="panel">
+          <h2>Pulse</h2>
+          <div class="field-row">
+            <div>
+              <div class="label">出力時間</div>
+              <div class="value small"><span id="pulseView">200</span> ms</div>
+            </div>
             <input id="pulseMs" type="number" min="50" max="5000" step="50" value="200">
           </div>
-          <button id="saveConfig" class="small-button" type="button">保存</button>
+          <button id="saveConfig" class="primary" type="button" style="margin-top: 10px;">保存</button>
+          <div id="controlMessage" class="message"></div>
         </div>
-        <div id="controlMessage" class="toast"></div>
-      </div>
 
-      <div class="section">
-        <h2 class="section-title">Manual</h2>
-        <div class="controls">
-          <button class="action" data-pulse="main" type="button">MAIN</button>
-          <button class="action" data-pulse="res" type="button">RES+</button>
-          <button class="action" data-pulse="set" type="button">SET-</button>
-          <button class="action cancel" data-pulse="cancel" type="button">CANCEL</button>
+        <div class="panel">
+          <h2>Manual</h2>
+          <div class="control-grid">
+            <button class="control-button" data-pulse="main" type="button">MAIN</button>
+            <button class="control-button" data-pulse="res" type="button">RES+</button>
+            <button class="control-button" data-pulse="set" type="button">SET-</button>
+            <button class="control-button cancel" data-pulse="cancel" type="button">CANCEL</button>
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <section id="system" class="view">
-      <div class="section">
-        <h2 class="section-title">System</h2>
-        <div class="meta">
-          <div class="row"><span>SSID</span><span>CC-S3</span></div>
-          <div class="row"><span>PASS</span><span>ccs3setup</span></div>
-          <div class="row"><span>IP</span><span>192.168.4.1</span></div>
+      <section id="system" class="view">
+        <div class="panel">
+          <h2>Device</h2>
+          <div class="grid two">
+            <div class="metric">
+              <div class="label">Wi-Fi SSID</div>
+              <div class="value small">CC-S3</div>
+            </div>
+            <div class="metric">
+              <div class="label">Wi-Fi Password</div>
+              <div class="value small">ccs3setup</div>
+            </div>
+            <div class="metric">
+              <div class="label">IP</div>
+              <div class="value small">192.168.4.1</div>
+            </div>
+            <div class="metric">
+              <div class="label">Firmware</div>
+              <div class="value small">cruise-adc</div>
+            </div>
+          </div>
         </div>
-      </div>
-      <div class="section">
-        <h2 class="section-title">Config</h2>
-        <pre id="configJson">{}</pre>
-        <div class="system-buttons" style="margin-top: 12px;">
-          <button id="reloadConfig" class="small-button" type="button">再読込</button>
-          <button id="resetConfig" class="small-button danger" type="button">初期化</button>
+
+        <div class="panel">
+          <h2>設定JSON</h2>
+          <textarea id="configJson" spellcheck="false"></textarea>
+          <div class="json-actions">
+            <button id="reloadConfig" type="button">再読込</button>
+            <button id="resetConfig" class="danger" type="button">初期化</button>
+            <button id="applyJson" class="primary" type="button">JSONを反映</button>
+          </div>
+          <div id="systemMessage" class="message"></div>
         </div>
-        <div id="systemMessage" class="toast"></div>
-      </div>
-    </section>
-  </main>
+      </section>
+    </main>
+  </div>
 
   <script>
     const defaultStatus = {
       adc: 0,
       button: "NONE",
       pulseMs: 200,
-      outputs: { main: false, res: false, set: false, cancel: false }
+      outputs: { main: false, res: false, set: false, brake: false }
     };
 
     let status = structuredClone(defaultStatus);
     let config = { pulseMs: 200 };
-    let ws = null;
+    let wsClient = null;
     let reconnectTimer = null;
 
-    const outputKeys = ["main", "res", "set", "cancel"];
+    function shouldUseDeviceApi() {
+      return location.hostname === "192.168.4.1" || location.hostname === "cc-s3.local" || location.hostname.endsWith(".local");
+    }
 
     function normalizeStatus(next) {
+      const brake = Boolean(next?.outputs?.brake ?? next?.outputs?.brakeOut ?? next?.outputs?.cancel);
       return {
         adc: Number(next?.adc) || 0,
         button: String(next?.button || "NONE"),
@@ -355,66 +371,81 @@
           main: Boolean(next?.outputs?.main),
           res: Boolean(next?.outputs?.res ?? next?.outputs?.upSet),
           set: Boolean(next?.outputs?.set ?? next?.outputs?.downRes),
-          cancel: Boolean(next?.outputs?.cancel ?? next?.outputs?.brake ?? next?.outputs?.brakeOut)
+          brake
         }
       };
     }
 
+    function setText(id, text) {
+      document.getElementById(id).textContent = text;
+    }
+
+    function setPill(id, isOn) {
+      const el = document.getElementById(id);
+      el.textContent = isOn ? "ON" : "OFF";
+      el.classList.toggle("on", Boolean(isOn));
+    }
+
     function render() {
-      outputKeys.forEach((key) => {
-        const card = document.querySelector(`[data-output-card="${key}"]`);
-        const on = Boolean(status.outputs[key]);
-        card.classList.toggle("on", on);
-        card.querySelector(".state").textContent = on ? "ON" : "OFF";
-      });
-      document.getElementById("adcView").textContent = String(status.adc);
-      document.getElementById("buttonView").textContent = status.button;
-      document.getElementById("pulseView").textContent = String(status.pulseMs);
+      setText("statusAdc", status.adc);
+      setText("statusButton", status.button);
+      setText("pulseView", status.pulseMs);
       document.getElementById("pulseMs").value = String(config.pulseMs);
-      document.getElementById("configJson").textContent = JSON.stringify(config, null, 2);
+      document.getElementById("configJson").value = JSON.stringify(config, null, 2);
+      setPill("outMain", status.outputs.main);
+      setPill("outRes", status.outputs.res);
+      setPill("outSet", status.outputs.set);
+      setPill("outCancel", status.outputs.brake);
     }
 
     async function apiJson(path, options = {}) {
-      const res = await fetch(path, {
+      const response = await fetch(path, {
         headers: { "Content-Type": "application/json" },
         ...options
       });
-      if (!res.ok) throw new Error(await res.text());
-      return res.json();
+      if (!response.ok) throw new Error(await response.text());
+      return response.json();
     }
 
     async function loadConfig() {
       try {
-        const next = await apiJson("/api/config");
+        const next = shouldUseDeviceApi() ? await apiJson("/api/config") : JSON.parse(localStorage.getItem("cc-s3.config") || "{}");
         config = { pulseMs: Number(next.pulseMs) || 200 };
-        render();
       } catch {
         config = { pulseMs: 200 };
-        render();
       }
+      render();
     }
 
     async function saveConfig() {
       const value = Number(document.getElementById("pulseMs").value);
-      const pulseMs = Math.min(5000, Math.max(50, Number.isFinite(value) ? value : 200));
-      config = { pulseMs };
-      await apiJson("/api/config", { method: "POST", body: JSON.stringify(config) });
+      config = { pulseMs: Math.min(5000, Math.max(50, Number.isFinite(value) ? value : 200)) };
+      localStorage.setItem("cc-s3.config", JSON.stringify(config));
+      if (shouldUseDeviceApi()) {
+        await apiJson("/api/config", { method: "POST", body: JSON.stringify(config) });
+      }
       document.getElementById("controlMessage").textContent = "保存しました";
       render();
     }
 
     async function loadStatus() {
-      const next = await apiJson("/api/status");
-      status = normalizeStatus(next);
+      if (!shouldUseDeviceApi()) {
+        status = normalizeStatus({ ...defaultStatus, pulseMs: config.pulseMs });
+        render();
+        return;
+      }
+      status = normalizeStatus(await apiJson("/api/status"));
+      config.pulseMs = status.pulseMs;
       render();
     }
 
     function pulse(name) {
       const command = { type: "output", name, durationMs: config.pulseMs };
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify(command));
+      if (wsClient && wsClient.readyState === WebSocket.OPEN) {
+        wsClient.send(JSON.stringify(command));
         return;
       }
+      if (!shouldUseDeviceApi()) return;
       apiJson("/api/output", { method: "POST", body: JSON.stringify(command) })
         .then((next) => {
           status = normalizeStatus(next);
@@ -423,38 +454,34 @@
         .catch(() => {});
     }
 
-    function connectWs() {
+    function connectStatusSocket() {
+      if (!shouldUseDeviceApi()) return;
       clearTimeout(reconnectTimer);
       const protocol = location.protocol === "https:" ? "wss:" : "ws:";
-      ws = new WebSocket(`${protocol}//${location.host}/ws`);
-      document.getElementById("wsState").textContent = "Connecting";
-
-      ws.addEventListener("open", () => {
-        document.getElementById("wsState").textContent = "Online";
-      });
-
-      ws.addEventListener("message", (event) => {
+      wsClient = new WebSocket(`${protocol}//${location.host}/ws`);
+      wsClient.addEventListener("message", (event) => {
         try {
           status = normalizeStatus(JSON.parse(event.data));
           config.pulseMs = status.pulseMs;
           render();
         } catch {}
       });
-
-      ws.addEventListener("close", () => {
-        document.getElementById("wsState").textContent = "Offline";
-        reconnectTimer = setTimeout(connectWs, 1200);
-      });
-
-      ws.addEventListener("error", () => {
-        document.getElementById("wsState").textContent = "Error";
+      wsClient.addEventListener("close", () => {
+        reconnectTimer = setTimeout(connectStatusSocket, 1200);
       });
     }
 
-    function bindUi() {
-      document.querySelectorAll("[data-tab]").forEach((button) => {
+    function showMessage(id, message) {
+      const el = document.getElementById(id);
+      el.textContent = message;
+      window.clearTimeout(el._timer);
+      el._timer = window.setTimeout(() => { el.textContent = ""; }, 2400);
+    }
+
+    function bindEvents() {
+      document.querySelectorAll(".tab-button").forEach((button) => {
         button.addEventListener("click", () => {
-          document.querySelectorAll("[data-tab]").forEach((item) => item.classList.toggle("active", item === button));
+          document.querySelectorAll(".tab-button").forEach((item) => item.classList.toggle("active", item === button));
           document.querySelectorAll(".view").forEach((view) => view.classList.toggle("active", view.id === button.dataset.tab));
         });
       });
@@ -470,22 +497,36 @@
       });
 
       document.getElementById("reloadConfig").addEventListener("click", () => {
-        loadConfig().then(loadStatus).catch(() => {
-          document.getElementById("systemMessage").textContent = "再読込に失敗しました";
-        });
+        loadConfig().then(loadStatus).then(() => showMessage("systemMessage", "再読込しました"));
+      });
+
+      document.getElementById("applyJson").addEventListener("click", async () => {
+        try {
+          const next = JSON.parse(document.getElementById("configJson").value);
+          config = { pulseMs: Number(next.pulseMs) || 200 };
+          await saveConfig();
+          showMessage("systemMessage", "JSONを反映しました");
+        } catch {
+          showMessage("systemMessage", "JSON形式を確認してください");
+        }
       });
 
       document.getElementById("resetConfig").addEventListener("click", async () => {
-        await apiJson("/api/reset", { method: "POST", body: "{}" });
-        await loadConfig();
-        document.getElementById("systemMessage").textContent = "初期化しました";
+        config = { pulseMs: 200 };
+        if (shouldUseDeviceApi()) {
+          await apiJson("/api/reset", { method: "POST", body: "{}" });
+        }
+        localStorage.setItem("cc-s3.config", JSON.stringify(config));
+        await loadStatus();
+        showMessage("systemMessage", "初期化しました");
       });
     }
 
-    bindUi();
+    bindEvents();
     render();
     loadConfig().then(loadStatus).catch(() => {});
-    connectWs();
+    connectStatusSocket();
+    setInterval(loadStatus, 1000);
   </script>
 </body>
 </html>
