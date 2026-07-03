@@ -3,6 +3,7 @@
 #include <ArduinoJson.h>
 
 #include "ConfigStore.h"
+#include "CruiseInput.h"
 #include "Outputs.h"
 
 void setupStatusInputs() {
@@ -10,6 +11,8 @@ void setupStatusInputs() {
 
 String buildStatusJson() {
   StaticJsonDocument<384> doc;
+  doc["adc"] = getCruiseAdc();
+  doc["button"] = getCruiseButton();
   doc["pulseMs"] = getPulseMs();
 
   JsonObject outputs = doc["outputs"].to<JsonObject>();

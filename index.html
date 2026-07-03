@@ -278,6 +278,8 @@
       <div class="section">
         <h2 class="section-title">Connection</h2>
         <div class="meta">
+          <div class="row"><span>ADC GPIO4</span><span id="adcView">0</span></div>
+          <div class="row"><span>Button</span><span id="buttonView">NONE</span></div>
           <div class="row"><span>WebSocket</span><span id="wsState">Connecting</span></div>
           <div class="row"><span>Pulse</span><span><span id="pulseView">200</span> ms</span></div>
         </div>
@@ -331,6 +333,8 @@
 
   <script>
     const defaultStatus = {
+      adc: 0,
+      button: "NONE",
       pulseMs: 200,
       outputs: { main: false, res: false, set: false, cancel: false }
     };
@@ -344,6 +348,8 @@
 
     function normalizeStatus(next) {
       return {
+        adc: Number(next?.adc) || 0,
+        button: String(next?.button || "NONE"),
         pulseMs: Number(next?.pulseMs) || config.pulseMs || 200,
         outputs: {
           main: Boolean(next?.outputs?.main),
@@ -361,6 +367,8 @@
         card.classList.toggle("on", on);
         card.querySelector(".state").textContent = on ? "ON" : "OFF";
       });
+      document.getElementById("adcView").textContent = String(status.adc);
+      document.getElementById("buttonView").textContent = status.button;
       document.getElementById("pulseView").textContent = String(status.pulseMs);
       document.getElementById("pulseMs").value = String(config.pulseMs);
       document.getElementById("configJson").textContent = JSON.stringify(config, null, 2);

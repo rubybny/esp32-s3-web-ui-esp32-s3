@@ -82,18 +82,44 @@ Replace `COMx` with the port shown by `arduino-cli board list`.
 
 All outputs drive PhotoMOS input LEDs. `HIGH` is ON, `LOW` is OFF.
 
-| Name | GPIO | Contact Side |
-|---|---:|---|
-| MAIN_OUT | 5 | short to 3-drive COM |
-| RES_OUT | 6 | short to 3-drive COM |
-| SET_OUT | 7 | short to 3-drive COM |
-| BRAKE_OUT | 9 | connect `BRAKE_12V_IN` to 3-drive gray wire |
+| Name | GPIO | Direction | Contact Side |
+|---|---:|---|---|
+| CRUISE_ADC | 4 | ADC input | cruise switch resistor ladder |
+| MAIN_OUT | 5 | output | short to 3-drive COM |
+| RES_OUT | 6 | output | short to 3-drive COM |
+| SET_OUT | 7 | output | short to 3-drive COM |
+| BRAKE_OUT | 9 | output | connect `BRAKE_12V_IN` to 3-drive gray wire |
 
 `CANCEL` operation uses `BRAKE_OUT` (`GPIO9`). The dedicated CANCEL contact output is not used.
 
+## ADC Input
+
+Connect the cruise switch resistor ladder to `GPIO4`.
+
+```text
+3.3V
+ |
+10k pull-up
+ |
+GPIO4 ADC
+ |
+cruise resistor ladder
+ |
+GND
+```
+
+Target resistance values:
+
+| Button | Resistance to GND | Approx ADC |
+|---|---:|---:|
+| MAIN | 0 ohm | 0 |
+| CANCEL | 239.7 ohm | 96 |
+| RES+ | 389 ohm | 153 |
+| SET- | 909 ohm | 341 |
+| Not pressed | OPEN | 4095 |
+
 Removed from this dedicated version:
 
-- Steering ADC input `GPIO4`
 - ATOTO/audio outputs `GPIO35-39`
 - Illumination control
 - Brake input detection `GPIO10`
@@ -139,6 +165,8 @@ cancel
 
 ```json
 {
+  "adc": 4095,
+  "button": "NONE",
   "pulseMs": 200,
   "outputs": {
     "main": false,

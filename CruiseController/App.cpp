@@ -4,6 +4,7 @@
 #include <LittleFS.h>
 
 #include "ConfigStore.h"
+#include "CruiseInput.h"
 #include "Outputs.h"
 #include "Status.h"
 #include "WebApp.h"
@@ -13,6 +14,7 @@ void appSetup() {
   delay(200);
 
   setupStatusInputs();
+  setupCruiseInput();
   setupOutputPins();
 
   if (!LittleFS.begin(true)) {
@@ -24,6 +26,7 @@ void appSetup() {
 }
 
 void appLoop() {
+  updateCruiseInput();
   updateOutputPulses();
   webAppLoop();
 }
