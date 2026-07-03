@@ -6,6 +6,8 @@
 
 namespace {
 constexpr uint32_t DEBOUNCE_MS = 30;
+constexpr uint32_t INPUT_HOLD_REFRESH_MS = 80;
+constexpr uint32_t INPUT_HOLD_OUTPUT_MS = 220;
 constexpr int DETECT_THRESHOLD = 180;
 
 int currentAdc = 4095;
@@ -13,8 +15,8 @@ String rawButton = "NONE";
 String candidateButton = "NONE";
 String stableButton = "NONE";
 String displayButton = "NONE";
-String activeInputOutput = "";
 uint32_t candidateSince = 0;
+uint32_t lastHoldRefreshAt = 0;
 
 bool elapsed(uint32_t now, uint32_t target) {
   return static_cast<int32_t>(now - target) >= 0;
@@ -82,20 +84,16 @@ void updateCruiseInput() {
   const String button = updateDebouncedButton(rawButton, millis());
   displayButton = rawButton != "NONE" ? rawButton : button;
 
-  if (rawButton == "NONE") {
-    if (activeInputOutput.length() > 0) {
-      resetOutputs();
-      activeInputOutput = "";
-    }
-    return;
-  }
+  if (rawButton == "NONE") return;
 
   const String outputName = outputNameForButton(rawButton);
   if (outputName.length() == 0) return;
-  if (outputName == activeInputOutput) return;
 
-  setOutputState(outputName, true);
-  activeInputOutput = outputName;
+  uint32_t now = millis();
+  if (!elapsed(now, lastHoldRefreshAt + INPUT_HOLD_REFRESH_MS)) return;
+
+  pulseOutput(outputName, INPUT_HOLD_OUTPUT_MS);
+  lastHoldRefreshAt = now;
 }
 
 int getCruiseAdc() {
