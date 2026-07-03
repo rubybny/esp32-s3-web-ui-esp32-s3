@@ -1,27 +1,10 @@
 #include "ConfigStore.h"
 
 #include <Preferences.h>
-#include <string.h>
 
 namespace {
-constexpr int DETECT_THRESHOLD = 100;
-
-struct LearnedEntry {
-  const char* side;
-  const char* name;
-};
-
-const LearnedEntry LEARNED_ENTRIES[] = {
-    {"L", "VolUp"},
-    {"L", "VolDown"},
-    {"L", "SeekPlus"},
-    {"L", "SeekMinus"},
-    {"L", "Mode"},
-    {"R", "Main"},
-    {"R", "Cancel"},
-    {"R", "UpSet"},
-    {"R", "DownRes"},
-};
+constexpr uint32_t DEFAULT_PULSE_MS = 200;
+constexpr uint32_t MAX_PULSE_MS = 5000;
 
 Preferences prefs;
 }
@@ -29,27 +12,8 @@ Preferences prefs;
 String configJson;
 
 String defaultConfigJson() {
-  StaticJsonDocument<768> doc;
-  JsonObject learned = doc["learned"].to<JsonObject>();
-  JsonObject left = learned["L"].to<JsonObject>();
-  left["VolUp"] = 0;
-  left["VolDown"] = 0;
-  left["SeekPlus"] = 0;
-  left["SeekMinus"] = 0;
-  left["Mode"] = 0;
-
-  JsonObject right = learned["R"].to<JsonObject>();
-  right["Main"] = 0;
-  right["Cancel"] = 0;
-  right["UpSet"] = 0;
-  right["DownRes"] = 0;
-
-  JsonObject timing = doc["timing"].to<JsonObject>();
-  timing["mainHoldMs"] = 1000;
-  timing["cancelMs"] = 200;
-  timing["upSetMs"] = 200;
-  timing["downResMs"] = 200;
-  timing["brakeOutMs"] = 300;
+  StaticJsonDocument<128> doc;
+  doc["pulseMs"] = DEFAULT_PULSE_MS;
 
   String json;
   serializeJson(doc, json);
@@ -59,21 +23,38 @@ String defaultConfigJson() {
 void beginConfigStore() {
   prefs.begin("cc-s3", false);
   configJson = prefs.getString("config", "");
-  if (configJson.length() == 0) {
+
+  StaticJsonDocument<1024> doc;
+  if (configJson.length() == 0 || !parseConfig(doc)) {
     resetConfig();
   }
 }
 
 bool parseConfig(StaticJsonDocument<1024>& doc) {
   DeserializationError err = deserializeJson(doc, configJson);
-  if (!err) return true;
+  if (err) return false;
+  if (!doc["pulseMs"].is<uint32_t>()) return false;
 
-  resetConfig();
-  return !deserializeJson(doc, configJson);
+  uint32_t pulseMs = doc["pulseMs"] | DEFAULT_PULSE_MS;
+  if (pulseMs == 0 || pulseMs > MAX_PULSE_MS) {
+    doc["pulseMs"] = DEFAULT_PULSE_MS;
+  }
+  return true;
 }
 
 void saveConfigJson(const String& json) {
-  configJson = json;
+  StaticJsonDocument<1024> doc;
+  DeserializationError err = deserializeJson(doc, json);
+  if (err) return;
+
+  uint32_t pulseMs = doc["pulseMs"] | DEFAULT_PULSE_MS;
+  if (pulseMs == 0 || pulseMs > MAX_PULSE_MS) {
+    pulseMs = DEFAULT_PULSE_MS;
+  }
+
+  StaticJsonDocument<128> normalized;
+  normalized["pulseMs"] = pulseMs;
+  serializeJson(normalized, configJson);
   prefs.putString("config", configJson);
 }
 
@@ -81,54 +62,14 @@ void resetConfig() {
   saveConfigJson(defaultConfigJson());
 }
 
-bool isValidLearnTarget(const char* side, const char* name) {
-  for (const auto& entry : LEARNED_ENTRIES) {
-    if (strcmp(side, entry.side) == 0 && strcmp(name, entry.name) == 0) {
-      return true;
-    }
-  }
-  return false;
-}
-
-bool setLearnedValue(const char* side, const char* name, int adc) {
-  if (!isValidLearnTarget(side, name)) return false;
-
-  StaticJsonDocument<1024> doc;
-  if (!parseConfig(doc)) return false;
-
-  doc["learned"][side][name] = adc;
-  String json;
-  serializeJson(doc, json);
-  saveConfigJson(json);
-  return true;
-}
-
-String detectButton(int adc) {
-  StaticJsonDocument<1024> doc;
-  if (!parseConfig(doc)) return "NONE";
-
-  int bestDiff = DETECT_THRESHOLD + 1;
-  const char* bestName = "NONE";
-
-  for (const auto& entry : LEARNED_ENTRIES) {
-    int learned = doc["learned"][entry.side][entry.name] | 0;
-    if (learned == 0) continue;
-
-    int diff = abs(adc - learned);
-    if (diff < bestDiff) {
-      bestDiff = diff;
-      bestName = entry.name;
-    }
-  }
-
-  return bestDiff <= DETECT_THRESHOLD ? String(bestName) : String("NONE");
-}
-
 uint32_t getTimingMs(const char* key, uint32_t fallback) {
-  StaticJsonDocument<1024> doc;
-  if (!parseConfig(doc)) return fallback;
+  if (String(key) == "pulseMs") return getPulseMs();
+  return fallback;
+}
 
-  uint32_t value = doc["timing"][key] | fallback;
-  if (value == 0 || value > 10000) return fallback;
-  return value;
+uint32_t getPulseMs() {
+  StaticJsonDocument<1024> doc;
+  if (!parseConfig(doc)) return DEFAULT_PULSE_MS;
+
+  return doc["pulseMs"] | DEFAULT_PULSE_MS;
 }

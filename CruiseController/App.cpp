@@ -4,10 +4,8 @@
 #include <LittleFS.h>
 
 #include "ConfigStore.h"
-#include "NaviOutput.h"
 #include "Outputs.h"
 #include "Status.h"
-#include "SteeringControl.h"
 #include "WebApp.h"
 
 void appSetup() {
@@ -16,7 +14,6 @@ void appSetup() {
 
   setupStatusInputs();
   setupOutputPins();
-  setupNaviOutputPins();
 
   if (!LittleFS.begin(true)) {
     Serial.println("LittleFS mount failed");
@@ -27,6 +24,6 @@ void appSetup() {
 }
 
 void appLoop() {
-  updateSteeringOutputs();
+  updateOutputPulses();
   webAppLoop();
 }

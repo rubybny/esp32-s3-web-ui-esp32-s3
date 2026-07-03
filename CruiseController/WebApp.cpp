@@ -10,13 +10,12 @@
 
 #include "ConfigStore.h"
 #include "Outputs.h"
-#include "Pins.h"
 #include "Status.h"
 
 namespace {
 constexpr const char* AP_SSID = "CC-S3";
 constexpr const char* AP_PASS = "ccs3setup";
-constexpr uint32_t WS_STATUS_INTERVAL_MS = 300;
+constexpr uint32_t WS_STATUS_INTERVAL_MS = 500;
 
 IPAddress apIp(192, 168, 4, 1);
 IPAddress gateway(192, 168, 4, 1);
@@ -46,6 +45,18 @@ void sendError(AsyncWebServerRequest* request, int code, const char* message) {
   String json;
   serializeJson(doc, json);
   sendJson(request, json, code);
+}
+
+bool handleOutputCommand(JsonVariantConst command) {
+  String name = command["name"] | "";
+  if (!isValidOutputName(name)) return false;
+
+  if (command["state"].is<bool>()) {
+    return setOutputState(name, command["state"].as<bool>());
+  }
+
+  uint32_t durationMs = command["durationMs"] | getPulseMs();
+  return pulseOutput(name, durationMs);
 }
 
 void handleJsonBody(
@@ -121,32 +132,11 @@ void setupRoutes() {
       [](AsyncWebServerRequest* request, uint8_t* data, size_t len, size_t index, size_t total) {
         handleJsonBody(request, data, len, index, total,
                        [](AsyncWebServerRequest* req, StaticJsonDocument<1024>& doc) {
-                         String name = doc["name"] | "";
-                         bool state = doc["state"] | false;
-                         if (!setOutputState(name, state)) {
+                         if (!handleOutputCommand(doc.as<JsonVariantConst>())) {
                            sendError(req, 400, "invalid output name");
                            return;
                          }
                          sendJson(req, buildStatusJson());
-                       });
-      });
-
-  server.on(
-      "/api/learn",
-      HTTP_POST,
-      [](AsyncWebServerRequest*) {},
-      nullptr,
-      [](AsyncWebServerRequest* request, uint8_t* data, size_t len, size_t index, size_t total) {
-        handleJsonBody(request, data, len, index, total,
-                       [](AsyncWebServerRequest* req, StaticJsonDocument<1024>& doc) {
-                         const char* side = doc["side"] | "";
-                         const char* name = doc["name"] | "";
-                         int adc = doc["adc"] | analogRead(Pins::ADC_STEER);
-                         if (!setLearnedValue(side, name, adc)) {
-                           sendError(req, 400, "invalid learn target");
-                           return;
-                         }
-                         sendJson(req, configJson);
                        });
       });
 
@@ -176,8 +166,26 @@ void setupRoutes() {
 }
 
 void setupWebSocket() {
-  ws.onEvent([](AsyncWebSocket*, AsyncWebSocketClient* client, AwsEventType type, void*, uint8_t*, size_t) {
+  ws.onEvent([](AsyncWebSocket*, AsyncWebSocketClient* client, AwsEventType type, void* arg, uint8_t* data, size_t len) {
     if (type == WS_EVT_CONNECT) {
+      client->text(buildStatusJson());
+      return;
+    }
+
+    if (type != WS_EVT_DATA) return;
+
+    AwsFrameInfo* info = static_cast<AwsFrameInfo*>(arg);
+    if (!info || !info->final || info->index != 0 || info->len != len || info->opcode != WS_TEXT) {
+      return;
+    }
+
+    StaticJsonDocument<512> doc;
+    DeserializationError err = deserializeJson(doc, data, len);
+    if (err) return;
+
+    String typeName = doc["type"] | "";
+    if (typeName == "output") {
+      handleOutputCommand(doc.as<JsonVariantConst>());
       client->text(buildStatusJson());
     }
   });

@@ -3,1266 +3,484 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>ESP32-S3 Cruise Converter</title>
+  <title>CC-S3</title>
   <style>
     :root {
       color-scheme: light;
-      --bg: #f6f8fb;
+      --bg: #f5f6f8;
       --panel: #ffffff;
-      --panel-2: #f8fafc;
-      --line: #dde5ee;
-      --text: #17202c;
-      --muted: #637083;
-      --dim: #96a1af;
-      --accent: #2563eb;
-      --accent-2: #f59e0b;
-      --danger: #dc2626;
-      --ok: #16a34a;
-      --off: #d5dde6;
-      --radius: 8px;
-      --shadow: 0 12px 28px rgba(17, 24, 39, .08);
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --ink: #20242b;
+      --muted: #6d7480;
+      --line: #dfe3e8;
+      --accent: #146ef5;
+      --active: #18a058;
+      --danger: #d64242;
+      --shadow: 0 12px 30px rgba(20, 28, 40, .08);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
       min-height: 100vh;
+      color: var(--ink);
       background: var(--bg);
-      color: var(--text);
-      font-size: 18px;
-      line-height: 1.45;
+      -webkit-tap-highlight-color: transparent;
     }
 
-    button,
-    input,
-    textarea {
+    button, input {
       font: inherit;
     }
 
     button {
-      min-height: 48px;
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      background: #ffffff;
-      color: var(--text);
-      padding: 12px 14px;
-      font-weight: 500;
-      cursor: pointer;
+      border: 0;
       touch-action: manipulation;
     }
 
-    button:active {
-      transform: translateY(1px);
-    }
-
-    button.primary {
-      border-color: rgba(37, 99, 235, .52);
-      background: var(--accent);
-      color: #f8fdff;
-    }
-
-    button.warn {
-      border-color: rgba(245, 158, 11, .75);
-      background: #fef3c7;
-      color: #7c3d00;
-    }
-
-    button.danger {
-      border-color: rgba(220, 38, 38, .75);
-      background: #fee2e2;
-      color: #8d1f1f;
-    }
-
-    input[type="number"],
-    textarea {
-      width: 100%;
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      background: #ffffff;
-      color: var(--text);
-      padding: 12px;
-      min-height: 48px;
-    }
-
-    textarea {
-      min-height: 220px;
-      resize: vertical;
-      font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
-      font-size: 14px;
-      line-height: 1.5;
-      white-space: pre;
-    }
-
     .app {
-      width: min(980px, 100%);
+      width: min(760px, 100%);
       margin: 0 auto;
-      padding: calc(14px + env(safe-area-inset-top)) 14px calc(24px + env(safe-area-inset-bottom));
+      padding: env(safe-area-inset-top) 14px 24px;
     }
 
     .tabs {
       position: sticky;
       top: 0;
-      z-index: 20;
+      z-index: 5;
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 6px;
-      padding: 8px 0 12px;
-      background: rgba(246, 248, 251, .92);
-      backdrop-filter: blur(12px);
+      gap: 8px;
+      padding: 12px 0;
+      background: rgba(245, 246, 248, .92);
+      backdrop-filter: blur(14px);
     }
 
-    .tab-button {
-      min-height: 52px;
-      padding: 8px 4px;
+    .tab {
+      min-height: 46px;
+      border-radius: 999px;
       color: var(--muted);
-      background: #ffffff;
-      box-shadow: 0 1px 4px rgba(17, 24, 39, .05);
+      background: transparent;
     }
 
-    .tab-button.active {
-      color: #ffffff;
-      border-color: var(--accent);
-      background: var(--accent);
-    }
-
-    main {
-      display: grid;
-      gap: 14px;
+    .tab.active {
+      color: #fff;
+      background: var(--ink);
     }
 
     .view {
       display: none;
-      gap: 14px;
+      padding-top: 8px;
     }
 
     .view.active {
-      display: grid;
+      display: block;
     }
 
-    .panel {
+    .section {
+      padding: 18px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .section:last-child {
+      border-bottom: 0;
+    }
+
+    .section-title {
+      margin: 0 0 14px;
+      color: var(--muted);
+      font-size: 13px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .status-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .status {
+      min-height: 86px;
+      padding: 15px;
       border: 1px solid var(--line);
-      border-radius: var(--radius);
+      border-radius: 18px;
       background: var(--panel);
       box-shadow: var(--shadow);
-      padding: 14px;
     }
 
-    .panel h2,
-    .panel h3 {
-      margin: 0 0 12px;
-      letter-spacing: 0;
-    }
-
-    .panel h2 {
-      font-size: 21px;
-      font-weight: 540;
-    }
-
-    .panel h3 {
+    .status .name {
       color: var(--muted);
-      font-size: 16px;
-      font-weight: 520;
-      text-transform: uppercase;
+      font-size: 13px;
     }
 
-    .grid {
+    .status .state {
+      margin-top: 12px;
+      font-size: 24px;
+      font-weight: 500;
+    }
+
+    .status.on {
+      border-color: rgba(24, 160, 88, .35);
+      background: #f0fff7;
+    }
+
+    .status.on .state {
+      color: var(--active);
+    }
+
+    .pulse-panel {
       display: grid;
-      gap: 10px;
-    }
-
-    .grid.two {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .metric {
-      display: grid;
-      min-height: 86px;
-      align-content: space-between;
-      gap: 8px;
+      gap: 14px;
+      padding: 16px;
       border: 1px solid var(--line);
-      border-radius: var(--radius);
-      background: var(--panel-2);
-      padding: 12px;
+      border-radius: 22px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
     }
 
-    .label {
+    .field {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .field label {
       color: var(--muted);
       font-size: 14px;
-      font-weight: 500;
     }
 
-    .value {
-      overflow-wrap: anywhere;
-      font-size: 26px;
-      font-weight: 540;
-      line-height: 1.1;
+    .field input {
+      width: 132px;
+      min-height: 44px;
+      padding: 0 12px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      color: var(--ink);
+      background: #fff;
+      text-align: right;
     }
 
-    .value.small {
-      font-size: 20px;
-    }
-
-    .status-pill {
-      display: inline-grid;
-      place-items: center;
-      width: fit-content;
-      min-width: 70px;
-      min-height: 34px;
-      border-radius: 999px;
-      padding: 5px 11px;
-      background: var(--off);
-      color: #334155;
-      font-size: 16px;
-      font-weight: 520;
-    }
-
-    .status-pill.on {
-      background: var(--ok);
-      color: #ffffff;
-    }
-
-    .status-pill.warn {
-      background: var(--accent-2);
-      color: #1b1000;
-    }
-
-    .current-readout {
-      color: var(--muted);
-      font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
-      font-size: 14px;
-      font-weight: 500;
-      margin-top: 4px;
-    }
-
-    .steering-layout {
-      position: relative;
+    .controls {
       display: grid;
-      gap: 22px;
+      gap: 12px;
     }
 
-    .switch-unit {
+    .action {
+      min-height: 76px;
+      border-radius: 22px;
+      color: #fff;
+      background: var(--ink);
+      box-shadow: var(--shadow);
+      font-size: 23px;
+      font-weight: 500;
+      transition: transform .08s ease, background .12s ease;
+    }
+
+    .action:active {
+      transform: scale(.985);
+      background: var(--accent);
+    }
+
+    .action.brake {
+      background: var(--danger);
+    }
+
+    .meta {
       display: grid;
       gap: 10px;
-      border: 0;
-      border-radius: 0;
-      background: transparent;
-      padding: 4px 0 12px;
+      color: var(--muted);
+      font-size: 14px;
     }
 
-    .switch-unit + .switch-unit {
-      border-top: 1px solid var(--line);
-      padding-top: 22px;
-    }
-
-    .steering-status {
+    .row {
       display: flex;
-      align-items: flex-end;
       justify-content: space-between;
-      gap: 20px;
+      gap: 14px;
+      padding: 13px 0;
       border-bottom: 1px solid var(--line);
-      padding: 10px 2px 18px;
-      margin-bottom: 6px;
     }
 
-    .steering-status .metric-lite {
-      display: grid;
-      gap: 6px;
-      min-width: 138px;
+    .row:last-child {
+      border-bottom: 0;
     }
 
-    .steering-status .value {
-      font-size: 30px;
+    pre {
+      overflow: auto;
+      margin: 0;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: #fff;
+      color: #343942;
+      font-size: 12px;
+      line-height: 1.45;
     }
 
-    .switch-title {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      color: var(--muted);
-      font-size: 14px;
-      font-weight: 520;
-      text-transform: uppercase;
-    }
-
-    .switch-title-main {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .switch-face {
-      position: relative;
-      min-height: 318px;
-      aspect-ratio: 1;
-      border: 0;
-      border-radius: 999px;
-      background:
-        radial-gradient(circle at 50% 50%, transparent 0 43%, rgba(37, 99, 235, .055) 44% 58%, transparent 59%);
-      padding: 18px;
-    }
-
-    .switch-face::before {
-      content: "";
-      position: absolute;
-      inset: 22px;
-      border-radius: 999px;
-      border: 8px solid rgba(37, 99, 235, .075);
-      box-shadow: inset 0 0 0 1px rgba(37, 99, 235, .07);
-      pointer-events: none;
-    }
-
-    .switch-face::after {
-      content: "";
-      position: absolute;
-      inset: 94px;
-      border-radius: 999px;
-      border: 1px solid rgba(148, 163, 184, .18);
-      background: transparent;
-      box-shadow: none;
-      pointer-events: none;
-    }
-
-    .switch-grid {
-      position: absolute;
-      inset: 0;
-    }
-
-    .switch-item {
-      position: absolute;
-      z-index: 2;
-      width: min(108px, 31vw);
-      transform: translate(-50%, -50%);
-      display: grid;
-      justify-items: center;
-      text-align: center;
-      gap: 4px;
-    }
-
-    .switch-item.u {
-      left: 50%;
-      top: 18%;
-    }
-
-    .switch-item.l {
-      left: 22%;
-      top: 50%;
-    }
-
-    .switch-item.c {
-      left: 50%;
-      top: 50%;
-    }
-
-    .switch-item.r {
-      left: 78%;
-      top: 50%;
-    }
-
-    .switch-item.d {
-      left: 50%;
-      top: 82%;
-    }
-
-    .learn-action {
-      min-height: 42px;
-      min-width: 86px;
-      padding: 8px 12px;
-      border-color: rgba(37, 99, 235, .35);
-      background: #eff6ff;
-      color: #1d4ed8;
-      font-size: 15px;
-      font-weight: 500;
-      white-space: nowrap;
-    }
-
-    .switch-control {
-      display: inline-grid;
-      place-items: center;
-      width: auto;
-      min-height: 0;
-      border: 0;
-      border-radius: 999px;
-      background: transparent;
-      box-shadow: none;
-      padding: 4px 9px;
-      text-align: center;
-      color: var(--text);
-      font: inherit;
-      line-height: 1.2;
-      transition: border-color .16s ease, background .16s ease, box-shadow .16s ease, transform .16s ease;
-    }
-
-    .switch-control.round {
-      width: auto;
-      min-height: 0;
-      background: transparent;
-    }
-
-    .switch-control.learning {
-      background: transparent;
-      box-shadow: none;
-      cursor: pointer;
-    }
-
-    .switch-control.learning:active {
-      transform: scale(.98);
-    }
-
-    .switch-name {
-      font-size: 17px;
-      font-weight: 520;
-      line-height: 1.1;
-      overflow-wrap: anywhere;
-    }
-
-    .switch-control.learning {
-      background: rgba(239, 246, 255, .95);
-      box-shadow: 0 6px 16px rgba(37, 99, 235, .12);
-      color: #1d4ed8;
-    }
-
-    .switch-meta {
-      display: grid;
-      justify-content: center;
-      align-items: center;
-      gap: 2px;
-      text-align: center;
-      color: var(--muted);
-      font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
-      font-size: 11px;
-      font-weight: 500;
-      margin-top: 4px;
-    }
-
-    .press-select {
-      appearance: none;
-      min-height: 22px;
-      border: 0;
-      border-radius: 999px;
-      background: transparent;
-      color: var(--muted);
-      padding: 0 2px;
-      font: inherit;
-      text-align: center;
-      text-align-last: center;
-      cursor: pointer;
-    }
-
-    .press-select:focus {
-      outline: 2px solid rgba(37, 99, 235, .26);
-      outline-offset: 2px;
-      background: rgba(239, 246, 255, .9);
-    }
-
-    .actions {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 10px;
-    }
-
-    .message {
-      min-height: 26px;
-      color: var(--accent);
-      font-size: 15px;
-      font-weight: 500;
-    }
-
-    .json-actions {
+    .system-buttons {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 10px;
-      margin-top: 10px;
     }
 
-    .file-input {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      overflow: hidden;
-      clip: rect(0 0 0 0);
+    .small-button {
+      min-height: 48px;
+      border-radius: 16px;
+      color: #fff;
+      background: var(--accent);
     }
 
-    @media (min-width: 720px) {
-      .app {
-        padding-inline: 22px;
-      }
+    .small-button.danger {
+      background: var(--danger);
+    }
 
-      .grid.three {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-      }
+    .toast {
+      min-height: 22px;
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 13px;
+    }
 
-      .steering-layout {
+    @media (min-width: 560px) {
+      .controls {
         grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 28px;
       }
 
-      .switch-unit + .switch-unit {
-        border-top: 0;
-        border-left: 1px solid var(--line);
-        padding-top: 4px;
-        padding-left: 28px;
+      .action.brake {
+        grid-column: span 2;
       }
 
-      .switch-face {
-        min-height: 340px;
-      }
-
-      .actions {
-        grid-template-columns: repeat(3, 1fr);
-      }
-    }
-
-    @media (max-width: 380px) {
-      .switch-face {
-        min-height: 286px;
-      }
-
-      .switch-item {
-        width: 92px;
-      }
-
-      .switch-control {
-        padding: 4px 8px;
-      }
-
-      .switch-control.round {
-        width: auto;
-        min-height: 0;
-      }
-
-      .learn-action {
-        min-width: 64px;
-        font-size: 14px;
-      }
-
-      .switch-name {
-        font-size: 15px;
-      }
-
-      .switch-meta {
-        font-size: 10px;
+      .status-grid {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
       }
     }
   </style>
 </head>
 <body>
-  <div class="app">
-    <nav class="tabs" aria-label="画面切り替え">
-      <button class="tab-button active" data-tab="monitor" type="button">Monitor</button>
-      <button class="tab-button" data-tab="steering" type="button">Remote</button>
-      <button class="tab-button" data-tab="system" type="button">System</button>
+  <main class="app">
+    <nav class="tabs">
+      <button class="tab active" data-tab="monitor" type="button">Monitor</button>
+      <button class="tab" data-tab="control" type="button">Control</button>
+      <button class="tab" data-tab="system" type="button">System</button>
     </nav>
 
-    <main>
-      <section id="monitor" class="view active">
-        <div class="panel">
-          <h2>Input</h2>
-          <div class="grid two">
-            <div class="metric">
-              <div class="label">ADC現在値</div>
-              <div id="statusAdc" class="value">0</div>
-            </div>
-            <div class="metric">
-              <div class="label">Vin</div>
-              <div id="statusVin" class="value">0.0 V</div>
-            </div>
-            <div class="metric">
-              <div class="label">Vout</div>
-              <div id="statusVout" class="value">0.0 V</div>
-            </div>
-            <div class="metric">
-              <div class="label">BrakeIn</div>
-              <div id="statusBrakeIn" class="status-pill">OFF</div>
-              <div id="currentBrakeIn" class="current-readout">0 mA</div>
-            </div>
-          </div>
+    <section id="monitor" class="view active">
+      <div class="section">
+        <h2 class="section-title">Outputs</h2>
+        <div class="status-grid">
+          <div class="status" data-output-card="main"><div class="name">MAIN</div><div class="state">OFF</div></div>
+          <div class="status" data-output-card="res"><div class="name">RES+</div><div class="state">OFF</div></div>
+          <div class="status" data-output-card="set"><div class="name">SET-</div><div class="state">OFF</div></div>
+          <div class="status" data-output-card="cancel"><div class="name">CANCEL</div><div class="state">OFF</div></div>
+          <div class="status" data-output-card="brake"><div class="name">BRAKE</div><div class="state">OFF</div></div>
         </div>
+      </div>
+      <div class="section">
+        <h2 class="section-title">Connection</h2>
+        <div class="meta">
+          <div class="row"><span>WebSocket</span><span id="wsState">Connecting</span></div>
+          <div class="row"><span>Pulse</span><span><span id="pulseView">200</span> ms</span></div>
+        </div>
+      </div>
+    </section>
 
-        <div class="panel">
-          <h2>L</h2>
-          <div class="grid two grid three">
-            <div class="metric">
-              <div class="label">Vol+</div>
-              <div id="monLVolUp" class="status-pill">OFF</div>
-            </div>
-            <div class="metric">
-              <div class="label">Vol-</div>
-              <div id="monLVolDown" class="status-pill">OFF</div>
-            </div>
-            <div class="metric">
-              <div class="label">Seek+</div>
-              <div id="monLSeekPlus" class="status-pill">OFF</div>
-            </div>
-            <div class="metric">
-              <div class="label">Seek-</div>
-              <div id="monLSeekMinus" class="status-pill">OFF</div>
-            </div>
-            <div class="metric">
-              <div class="label">Mode</div>
-              <div id="monLMode" class="status-pill">OFF</div>
-            </div>
+    <section id="control" class="view">
+      <div class="section">
+        <h2 class="section-title">Pulse</h2>
+        <div class="pulse-panel">
+          <div class="field">
+            <label for="pulseMs">出力時間</label>
+            <input id="pulseMs" type="number" min="50" max="5000" step="50" value="200">
           </div>
+          <button id="saveConfig" class="small-button" type="button">保存</button>
         </div>
+        <div id="controlMessage" class="toast"></div>
+      </div>
 
-        <div class="panel">
-          <h2>Outputs</h2>
-          <div class="grid two grid three">
-            <div class="metric">
-              <div class="label">Main出力</div>
-              <div id="outMain" class="status-pill">OFF</div>
-              <div id="currentMain" class="current-readout">0 mA</div>
-            </div>
-            <div class="metric">
-              <div class="label">Up/Set出力</div>
-              <div id="outUpSet" class="status-pill">OFF</div>
-              <div id="currentUpSet" class="current-readout">0 mA</div>
-            </div>
-            <div class="metric">
-              <div class="label">Down/Res出力</div>
-              <div id="outDownRes" class="status-pill">OFF</div>
-              <div id="currentDownRes" class="current-readout">0 mA</div>
-            </div>
-            <div class="metric">
-              <div class="label">Cancel出力</div>
-              <div id="outCancel" class="status-pill">OFF</div>
-              <div id="currentCancel" class="current-readout">0 mA</div>
-            </div>
-            <div class="metric">
-              <div class="label">Brake疑似出力</div>
-              <div id="outBrake" class="status-pill">OFF</div>
-              <div id="currentBrakeOut" class="current-readout">0 mA</div>
-            </div>
-          </div>
+      <div class="section">
+        <h2 class="section-title">Manual</h2>
+        <div class="controls">
+          <button class="action" data-pulse="main" type="button">MAIN</button>
+          <button class="action" data-pulse="res" type="button">RES+</button>
+          <button class="action" data-pulse="set" type="button">SET-</button>
+          <button class="action" data-pulse="cancel" type="button">CANCEL</button>
+          <button class="action brake" data-pulse="brake" type="button">BRAKE</button>
         </div>
-      </section>
-      <section id="steering" class="view">
-        <div class="steering-status">
-          <div class="metric-lite">
-            <div class="label">ADCin living</div>
-            <div id="steeringAdc" class="value">0</div>
-          </div>
-          <div id="steeringMessage" class="message"></div>
-        </div>
+      </div>
+    </section>
 
-        <div class="steering-layout">
-          <div class="switch-unit">
-            <div class="switch-title">
-              <span class="switch-title-main"><span>L</span></span>
-              <button class="learn-action" data-learn-side="left" type="button">Learn</button>
-            </div>
-            <div class="switch-face">
-              <div id="leftSwitches" class="switch-grid"></div>
-            </div>
-          </div>
-
-          <div class="switch-unit">
-            <div class="switch-title">
-              <span class="switch-title-main"><span>R</span></span>
-              <button class="learn-action" data-learn-side="right" type="button">Learn</button>
-            </div>
-            <div class="switch-face">
-              <div id="rightSwitches" class="switch-grid"></div>
-            </div>
-          </div>
+    <section id="system" class="view">
+      <div class="section">
+        <h2 class="section-title">System</h2>
+        <div class="meta">
+          <div class="row"><span>SSID</span><span>CC-S3</span></div>
+          <div class="row"><span>PASS</span><span>ccs3setup</span></div>
+          <div class="row"><span>IP</span><span>192.168.4.1</span></div>
         </div>
-      </section>
-      <section id="system" class="view">
-        <div class="panel">
-          <h2>Device</h2>
-          <div class="grid two">
-            <div class="metric">
-              <div class="label">Wi-Fi SSID</div>
-              <div id="wifiSsid" class="value small">CC-S3</div>
-            </div>
-            <div class="metric">
-              <div class="label">Wi-Fi Password</div>
-              <div id="wifiPassword" class="value small">ccs3setup</div>
-            </div>
-            <div class="metric">
-              <div class="label">IP</div>
-              <div id="ipAddress" class="value small">192.168.4.1</div>
-            </div>
-            <div class="metric">
-              <div class="label">Firmware Version</div>
-              <div id="firmwareVersion" class="value small">0.1.0-ui</div>
-            </div>
-          </div>
+      </div>
+      <div class="section">
+        <h2 class="section-title">Config</h2>
+        <pre id="configJson">{}</pre>
+        <div class="system-buttons" style="margin-top: 12px;">
+          <button id="reloadConfig" class="small-button" type="button">再読込</button>
+          <button id="resetConfig" class="small-button danger" type="button">初期化</button>
         </div>
-
-        <div class="panel">
-          <h2>設定JSON</h2>
-          <textarea id="configJson" spellcheck="false"></textarea>
-          <div class="json-actions">
-            <button id="exportConfig" type="button">エクスポート</button>
-            <button id="importConfig" type="button">インポート</button>
-            <button id="applyJson" class="primary" type="button">JSONを反映</button>
-            <button id="resetConfig" class="danger" type="button">初期化</button>
-          </div>
-          <input id="importFile" class="file-input" type="file" accept="application/json,.json">
-          <div id="systemMessage" class="message"></div>
-        </div>
-      </section>
-    </main>
-  </div>
+        <div id="systemMessage" class="toast"></div>
+      </div>
+    </section>
+  </main>
 
   <script>
-    const STORAGE_KEY = "cruiseConverterConfig.v1";
-
-    const defaultConfig = {
-      learned: {
-        rMain: 900,
-        rCancel: 1350,
-        rUpSet: 1800,
-        rDownRes: 2250,
-        lVolUp: 650,
-        lVolDown: 1100,
-        lSeekPlus: 1550,
-        lSeekMinus: 2000,
-        lMode: 2450
-      },
-      pressMs: {
-        rMain: 700,
-        rCancel: 200,
-        rUpSet: 200,
-        rDownRes: 200,
-        brakeOut: 300,
-        lVolUp: 100,
-        lVolDown: 100,
-        lSeekPlus: 100,
-        lSeekMinus: 100,
-        lMode: 200
-      }
+    const defaultStatus = {
+      pulseMs: 200,
+      outputs: { main: false, res: false, set: false, cancel: false, brake: false }
     };
 
-    const switchGroups = {
-      left: [
-        ["lVolUp", "U", "Vol+"],
-        ["lSeekMinus", "L", "Seek-"],
-        ["lMode", "C", "Mode"],
-        ["lSeekPlus", "R", "Seek+"],
-        ["lVolDown", "D", "Vol-"]
-      ],
-      right: [
-        ["rDownRes", "U", "RES+"],
-        ["rMain", "R", "Main"],
-        ["rCancel", "C", "Cancel"],
-        ["rUpSet", "D", "SET-"]
-      ]
-    };
+    let status = structuredClone(defaultStatus);
+    let config = { pulseMs: 200 };
+    let ws = null;
+    let reconnectTimer = null;
 
-    const deviceLearnMap = {
-      lVolUp: { side: "L", name: "VolUp" },
-      lVolDown: { side: "L", name: "VolDown" },
-      lSeekPlus: { side: "L", name: "SeekPlus" },
-      lSeekMinus: { side: "L", name: "SeekMinus" },
-      lMode: { side: "L", name: "Mode" },
-      rMain: { side: "R", name: "Main" },
-      rCancel: { side: "R", name: "Cancel" },
-      rUpSet: { side: "R", name: "UpSet" },
-      rDownRes: { side: "R", name: "DownRes" }
-    };
+    const outputKeys = ["main", "res", "set", "cancel", "brake"];
 
-    let config = loadConfig();
-    let currentStatus = makeMockStatus();
-    let learningSide = null;
-    let wsClient = null;
-
-    function clone(value) {
-      return JSON.parse(JSON.stringify(value));
-    }
-
-    function loadConfig() {
-      const fallback = clone(defaultConfig);
-      try {
-        const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
-        if (!stored) return fallback;
-        return normalizeConfig(stored);
-      } catch {
-        return fallback;
-      }
-    }
-
-    function normalizeConfig(next) {
-      const learned = { ...defaultConfig.learned, ...(next.learned || {}) };
-      Object.keys(learned).forEach((key) => {
-        const numeric = Number(learned[key]);
-        learned[key] = Number.isFinite(numeric) ? numeric : defaultConfig.learned[key];
-      });
-      const pressMs = { ...defaultConfig.pressMs, ...(next.pressMs || {}) };
-      Object.keys(pressMs).forEach((key) => {
-        pressMs[key] = normalizePressMs(pressMs[key], defaultConfig.pressMs[key]);
-      });
+    function normalizeStatus(next) {
       return {
-        learned,
-        pressMs
-      };
-    }
-
-    function normalizeAnyConfig(next) {
-      if (next?.learned?.L || next?.learned?.R || next?.timing) {
-        return fromDeviceConfig(next);
-      }
-      return normalizeConfig(next);
-    }
-
-    function normalizePressMs(value, fallback = 0) {
-      const numeric = Number(value);
-      if (!Number.isFinite(numeric)) return fallback;
-      const rounded = Math.round(numeric / 100) * 100;
-      return Math.max(0, Math.min(5000, rounded));
-    }
-
-    async function apiGetStatus() {
-      if (!shouldUseDeviceApi()) return makeMockStatus();
-      try {
-        return normalizeStatus(await apiFetchJson("/api/status"));
-      } catch {
-        return makeMockStatus();
-      }
-    }
-
-    function shouldUseDeviceApi() {
-      return location.hostname === "192.168.4.1" || location.hostname === "cc-s3.local" || location.hostname.endsWith(".local");
-    }
-
-    async function apiFetchJson(path, options = {}) {
-      const controller = new AbortController();
-      const timeoutId = window.setTimeout(() => controller.abort(), 1200);
-      try {
-        const response = await fetch(path, {
-          ...options,
-          headers: { "Content-Type": "application/json", ...(options.headers || {}) },
-          signal: controller.signal
-        });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        return response.json();
-      } finally {
-        window.clearTimeout(timeoutId);
-      }
-    }
-
-    function normalizeStatus(status) {
-      return {
-        ...status,
-        adc: Number(status.adc || 0),
-        adcLiving: Number(status.adcLiving ?? status.adc ?? 0),
-        vin: Number(status.vin || 0),
-        vout: Number(status.vout || 0),
-        brakeIn: Boolean(status.brakeIn),
+        pulseMs: Number(next?.pulseMs) || config.pulseMs || 200,
         outputs: {
-          main: Boolean(status.outputs?.main),
-          upSet: Boolean(status.outputs?.upSet),
-          downRes: Boolean(status.outputs?.downRes),
-          cancel: Boolean(status.outputs?.cancel),
-          brakeOut: Boolean(status.outputs?.brakeOut),
-          navi: {
-            volUp: Boolean(status.outputs?.navi?.volUp),
-            volDown: Boolean(status.outputs?.navi?.volDown),
-            seekPlus: Boolean(status.outputs?.navi?.seekPlus),
-            seekMinus: Boolean(status.outputs?.navi?.seekMinus),
-            mode: Boolean(status.outputs?.navi?.mode)
-          }
-        },
-        currents: status.currentMa || status.currents || {}
+          main: Boolean(next?.outputs?.main),
+          res: Boolean(next?.outputs?.res ?? next?.outputs?.upSet),
+          set: Boolean(next?.outputs?.set ?? next?.outputs?.downRes),
+          cancel: Boolean(next?.outputs?.cancel),
+          brake: Boolean(next?.outputs?.brake ?? next?.outputs?.brakeOut)
+        }
       };
     }
 
-    async function apiSaveConfig(nextConfig) {
-      config = normalizeAnyConfig(nextConfig);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
-      if (shouldUseDeviceApi()) {
-        await apiFetchJson("/api/config", {
-          method: "POST",
-          body: JSON.stringify(toDeviceConfig(config))
-        });
-      }
-      return { ok: true };
+    function render() {
+      outputKeys.forEach((key) => {
+        const card = document.querySelector(`[data-output-card="${key}"]`);
+        const on = Boolean(status.outputs[key]);
+        card.classList.toggle("on", on);
+        card.querySelector(".state").textContent = on ? "ON" : "OFF";
+      });
+      document.getElementById("pulseView").textContent = String(status.pulseMs);
+      document.getElementById("pulseMs").value = String(config.pulseMs);
+      document.getElementById("configJson").textContent = JSON.stringify(config, null, 2);
     }
 
-    async function apiResetConfig() {
-      if (shouldUseDeviceApi()) {
-        const deviceConfig = await apiFetchJson("/api/reset", { method: "POST" });
-        config = fromDeviceConfig(deviceConfig);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
-        return { ok: true };
-      }
-      await apiSaveConfig(defaultConfig);
-      return { ok: true };
+    async function apiJson(path, options = {}) {
+      const res = await fetch(path, {
+        headers: { "Content-Type": "application/json" },
+        ...options
+      });
+      if (!res.ok) throw new Error(await res.text());
+      return res.json();
     }
 
-    async function apiLoadConfig() {
-      if (!shouldUseDeviceApi()) return;
+    async function loadConfig() {
       try {
-        config = fromDeviceConfig(await apiFetchJson("/api/config"));
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
-        renderAll();
+        const next = await apiJson("/api/config");
+        config = { pulseMs: Number(next.pulseMs) || 200 };
+        render();
       } catch {
-        // Keep local defaults if the ESP API is not reachable yet.
+        config = { pulseMs: 200 };
+        render();
       }
     }
 
-    async function apiLearnSwitch(key, adc) {
-      const target = deviceLearnMap[key];
-      if (!target || !shouldUseDeviceApi()) return;
-      const deviceConfig = await apiFetchJson("/api/learn", {
-        method: "POST",
-        body: JSON.stringify({ ...target, adc })
-      });
-      config = fromDeviceConfig(deviceConfig);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+    async function saveConfig() {
+      const value = Number(document.getElementById("pulseMs").value);
+      const pulseMs = Math.min(5000, Math.max(50, Number.isFinite(value) ? value : 200));
+      config = { pulseMs };
+      await apiJson("/api/config", { method: "POST", body: JSON.stringify(config) });
+      document.getElementById("controlMessage").textContent = "保存しました";
+      render();
     }
 
-    function toDeviceConfig(localConfig) {
-      const local = normalizeConfig(localConfig);
-      return {
-        learned: {
-          L: {
-            VolUp: local.learned.lVolUp,
-            VolDown: local.learned.lVolDown,
-            SeekPlus: local.learned.lSeekPlus,
-            SeekMinus: local.learned.lSeekMinus,
-            Mode: local.learned.lMode
-          },
-          R: {
-            Main: local.learned.rMain,
-            Cancel: local.learned.rCancel,
-            UpSet: local.learned.rUpSet,
-            DownRes: local.learned.rDownRes
-          }
-        },
-        timing: {
-          mainHoldMs: local.pressMs.rMain,
-          cancelMs: local.pressMs.rCancel,
-          upSetMs: local.pressMs.rUpSet,
-          downResMs: local.pressMs.rDownRes,
-          brakeOutMs: local.pressMs.brakeOut
-        }
-      };
+    async function loadStatus() {
+      const next = await apiJson("/api/status");
+      status = normalizeStatus(next);
+      render();
     }
 
-    function fromDeviceConfig(deviceConfig) {
-      const learned = deviceConfig?.learned || {};
-      const timing = deviceConfig?.timing || {};
-      return normalizeConfig({
-        learned: {
-          lVolUp: learned.L?.VolUp,
-          lVolDown: learned.L?.VolDown,
-          lSeekPlus: learned.L?.SeekPlus,
-          lSeekMinus: learned.L?.SeekMinus,
-          lMode: learned.L?.Mode,
-          rMain: learned.R?.Main,
-          rCancel: learned.R?.Cancel,
-          rUpSet: learned.R?.UpSet,
-          rDownRes: learned.R?.DownRes
-        },
-        pressMs: {
-          rMain: timing.mainHoldMs,
-          rCancel: timing.cancelMs,
-          rUpSet: timing.upSetMs,
-          rDownRes: timing.downResMs,
-          brakeOut: timing.brakeOutMs
-        }
-      });
-    }
-
-    function makeMockStatus() {
-      const adc = 1800;
-      const button = detectButton(adc);
-      return {
-        adc,
-        adcLiving: adc,
-        button,
-        vin: 12.2,
-        vout: 5.0,
-        brakeIn: false,
-        outputs: {
-          main: false,
-          upSet: false,
-          downRes: false,
-          cancel: false,
-          brakeOut: false,
-          navi: {
-            volUp: button === "VolUp",
-            volDown: button === "VolDown",
-            seekPlus: button === "SeekPlus",
-            seekMinus: button === "SeekMinus",
-            mode: button === "Mode"
-          }
-        },
-        currents: {
-          brakeIn: 0,
-          main: 0,
-          upSet: 0,
-          downRes: 0,
-          cancel: 0,
-          brakeOut: 0
-        }
-      };
-    }
-
-    function detectButton(adc) {
-      const labels = [
-        ["Main", config.learned.rMain],
-        ["Cancel", config.learned.rCancel],
-        ["UpSet", config.learned.rUpSet],
-        ["DownRes", config.learned.rDownRes],
-        ["VolUp", config.learned.lVolUp],
-        ["VolDown", config.learned.lVolDown],
-        ["SeekPlus", config.learned.lSeekPlus],
-        ["SeekMinus", config.learned.lSeekMinus],
-        ["Mode", config.learned.lMode]
-      ];
-      const nearest = labels
-        .map(([name, value]) => ({ name, diff: Math.abs(adc - Number(value)) }))
-        .sort((a, b) => a.diff - b.diff)[0];
-      return nearest && nearest.diff <= 90 ? nearest.name : "None";
-    }
-
-    function setText(id, text) {
-      document.getElementById(id).textContent = text;
-    }
-
-    function setPill(id, isOn) {
-      const el = document.getElementById(id);
-      el.textContent = isOn ? "ON" : "OFF";
-      el.classList.toggle("on", Boolean(isOn));
-    }
-
-    function renderStatus(status) {
-      currentStatus = status;
-      setText("statusAdc", status.adc);
-      setText("statusVin", `${status.vin.toFixed(1)} V`);
-      setText("statusVout", `${status.vout.toFixed(2)} V`);
-      setText("steeringAdc", status.adc);
-      setPill("statusBrakeIn", status.brakeIn);
-      setPill("outMain", status.outputs.main);
-      setPill("outUpSet", status.outputs.upSet);
-      setPill("outDownRes", status.outputs.downRes);
-      setPill("outCancel", status.outputs.cancel);
-      setPill("outBrake", status.outputs.brakeOut);
-      renderLeftMonitor(status.outputs.navi, status.button);
-      renderCurrents(status.currents || status.currentMa || {});
-    }
-
-    function renderLeftMonitor(naviOutputs, buttonName) {
-      if (naviOutputs) {
-        setPill("monLVolUp", naviOutputs.volUp);
-        setPill("monLVolDown", naviOutputs.volDown);
-        setPill("monLSeekPlus", naviOutputs.seekPlus);
-        setPill("monLSeekMinus", naviOutputs.seekMinus);
-        setPill("monLMode", naviOutputs.mode);
+    function pulse(name) {
+      const command = { type: "output", name, durationMs: config.pulseMs };
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify(command));
         return;
       }
-
-      const current = String(buttonName || "NONE");
-      setPill("monLVolUp", current === "VolUp");
-      setPill("monLVolDown", current === "VolDown");
-      setPill("monLSeekPlus", current === "SeekPlus");
-      setPill("monLSeekMinus", current === "SeekMinus");
-      setPill("monLMode", current === "Mode");
+      apiJson("/api/output", { method: "POST", body: JSON.stringify(command) })
+        .then((next) => {
+          status = normalizeStatus(next);
+          render();
+        })
+        .catch(() => {});
     }
 
-    function renderCurrents(currents) {
-      setCurrent("currentBrakeIn", currents.brakeIn);
-      setCurrent("currentMain", currents.main);
-      setCurrent("currentUpSet", currents.upSet);
-      setCurrent("currentDownRes", currents.downRes);
-      setCurrent("currentCancel", currents.cancel);
-      setCurrent("currentBrakeOut", currents.brakeOut);
-    }
+    function connectWs() {
+      clearTimeout(reconnectTimer);
+      const protocol = location.protocol === "https:" ? "wss:" : "ws:";
+      ws = new WebSocket(`${protocol}//${location.host}/ws`);
+      document.getElementById("wsState").textContent = "Connecting";
 
-    function setCurrent(id, value) {
-      const numeric = Number(value);
-      setText(id, `${Number.isFinite(numeric) ? numeric.toFixed(0) : "0"} mA`);
-    }
-
-    function renderSteeringSwitches() {
-      document.getElementById("leftSwitches").innerHTML = switchGroups.left.map((item) => renderSwitchItem(item, "left")).join("");
-      document.getElementById("rightSwitches").innerHTML = switchGroups.right.map((item) => renderSwitchItem(item, "right")).join("");
-      document.querySelectorAll("[data-learn-side]").forEach((button) => {
-        const side = button.dataset.learnSide;
-        button.textContent = learningSide === side ? "Learning" : "Learn";
-        button.classList.toggle("primary", learningSide === side);
+      ws.addEventListener("open", () => {
+        document.getElementById("wsState").textContent = "Online";
       });
-      document.querySelectorAll("[data-switch-key]").forEach((button) => {
-        button.addEventListener("click", () => learnSwitchValue(button.dataset.switchSide, button.dataset.switchKey, button.dataset.switchName));
+
+      ws.addEventListener("message", (event) => {
+        try {
+          status = normalizeStatus(JSON.parse(event.data));
+          config.pulseMs = status.pulseMs;
+          render();
+        } catch {}
       });
-      document.querySelectorAll("[data-press-key]").forEach((select) => {
-        select.addEventListener("change", async () => {
-          config.pressMs[select.dataset.pressKey] = normalizePressMs(select.value);
-          await apiSaveConfig(config);
-          renderSteeringSwitches();
-          renderConfigJson();
-          showMessage("steeringMessage", `${select.dataset.pressName} ${config.pressMs[select.dataset.pressKey]}ms`);
+
+      ws.addEventListener("close", () => {
+        document.getElementById("wsState").textContent = "Offline";
+        reconnectTimer = setTimeout(connectWs, 1200);
+      });
+
+      ws.addEventListener("error", () => {
+        document.getElementById("wsState").textContent = "Error";
+      });
+    }
+
+    function bindUi() {
+      document.querySelectorAll("[data-tab]").forEach((button) => {
+        button.addEventListener("click", () => {
+          document.querySelectorAll("[data-tab]").forEach((item) => item.classList.toggle("active", item === button));
+          document.querySelectorAll(".view").forEach((view) => view.classList.toggle("active", view.id === button.dataset.tab));
         });
       });
-    }
 
-    function startLearning(side) {
-      learningSide = learningSide === side ? null : side;
-      renderSteeringSwitches();
-      showMessage("steeringMessage", learningSide ? `${side.toUpperCase()} learning` : "");
-    }
-
-    async function learnSwitchValue(side, key, name) {
-      if (learningSide !== side) return;
-      config.learned[key] = currentStatus.adc;
-      learningSide = null;
-      if (shouldUseDeviceApi()) {
-        await apiLearnSwitch(key, currentStatus.adc);
-      } else {
-        await apiSaveConfig(config);
-      }
-      renderSteeringSwitches();
-      renderConfigJson();
-      showMessage("steeringMessage", `${side.toUpperCase()} ${name} = ${currentStatus.adc}`);
-    }
-
-    function renderSwitchItem([key, direction, name], side) {
-      const positionClass = direction.toLowerCase();
-      const roundClass = direction === "C" ? " round" : "";
-      const learnClass = learningSide === side ? " learning" : "";
-      return `
-        <div class="switch-item ${positionClass}">
-          <button class="switch-control${roundClass}${learnClass}" data-switch-side="${side}" data-switch-key="${key}" data-switch-name="${name}" type="button">
-            <span class="switch-name">${name}</span>
-          </button>
-          <div class="switch-meta">
-            <span>ADC${config.learned[key]}</span>
-            <select class="press-select" data-press-key="${key}" data-press-name="${name}" aria-label="${name} press time">
-              ${renderPressOptions(config.pressMs[key])}
-            </select>
-          </div>
-        </div>
-      `;
-    }
-
-    function renderPressOptions(selectedValue) {
-      const selected = normalizePressMs(selectedValue);
-      let html = "";
-      for (let value = 0; value <= 5000; value += 100) {
-        html += `<option value="${value}"${value === selected ? " selected" : ""}>${value}ms</option>`;
-      }
-      return html;
-    }
-
-    function renderConfigJson() {
-      document.getElementById("configJson").value = JSON.stringify(toDeviceConfig(config), null, 2);
-    }
-
-    function renderAll() {
-      renderSteeringSwitches();
-      renderConfigJson();
-    }
-
-    function showMessage(id, message) {
-      const el = document.getElementById(id);
-      el.textContent = message;
-      window.clearTimeout(el._timer);
-      el._timer = window.setTimeout(() => {
-        el.textContent = "";
-      }, 2600);
-    }
-
-    function switchTab(tabId) {
-      document.querySelectorAll(".tab-button").forEach((button) => {
-        button.classList.toggle("active", button.dataset.tab === tabId);
-      });
-      document.querySelectorAll(".view").forEach((view) => {
-        view.classList.toggle("active", view.id === tabId);
-      });
-      if (tabId === "system") renderConfigJson();
-    }
-
-    function bindEvents() {
-      document.querySelectorAll(".tab-button").forEach((button) => {
-        button.addEventListener("click", () => switchTab(button.dataset.tab));
+      document.querySelectorAll("[data-pulse]").forEach((button) => {
+        button.addEventListener("click", () => pulse(button.dataset.pulse));
       });
 
-      document.querySelectorAll("[data-learn-side]").forEach((button) => {
-        button.addEventListener("click", () => startLearning(button.dataset.learnSide));
+      document.getElementById("saveConfig").addEventListener("click", () => {
+        saveConfig().catch(() => {
+          document.getElementById("controlMessage").textContent = "保存に失敗しました";
+        });
       });
 
-      document.getElementById("exportConfig").addEventListener("click", () => {
-        const blob = new Blob([JSON.stringify(toDeviceConfig(config), null, 2)], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = "cruise-converter-config.json";
-        link.click();
-        URL.revokeObjectURL(url);
-        showMessage("systemMessage", "エクスポートしました");
-      });
-
-      document.getElementById("importConfig").addEventListener("click", () => {
-        document.getElementById("importFile").click();
-      });
-
-      document.getElementById("importFile").addEventListener("change", async (event) => {
-        const file = event.target.files[0];
-        if (!file) return;
-        try {
-          const imported = JSON.parse(await file.text());
-          await apiSaveConfig(imported);
-          renderAll();
-          showMessage("systemMessage", "インポートしました");
-        } catch {
-          showMessage("systemMessage", "JSONを読み込めません");
-        } finally {
-          event.target.value = "";
-        }
-      });
-
-      document.getElementById("applyJson").addEventListener("click", async () => {
-        try {
-          const next = JSON.parse(document.getElementById("configJson").value);
-          await apiSaveConfig(next);
-          renderAll();
-          showMessage("systemMessage", "JSONを反映しました");
-        } catch {
-          showMessage("systemMessage", "JSON形式を確認してください");
-        }
+      document.getElementById("reloadConfig").addEventListener("click", () => {
+        loadConfig().then(loadStatus).catch(() => {
+          document.getElementById("systemMessage").textContent = "再読込に失敗しました";
+        });
       });
 
       document.getElementById("resetConfig").addEventListener("click", async () => {
-        if (!confirm("設定を初期化しますか？")) return;
-        await apiResetConfig();
-        renderAll();
-        showMessage("systemMessage", "初期化しました");
+        await apiJson("/api/reset", { method: "POST", body: "{}" });
+        await loadConfig();
+        document.getElementById("systemMessage").textContent = "初期化しました";
       });
     }
 
-    async function startStatusLoop() {
-      await apiLoadConfig();
-      renderStatus(await apiGetStatus());
-      connectStatusSocket();
-      window.setInterval(async () => {
-        renderStatus(await apiGetStatus());
-      }, 1000);
-    }
-
-    function connectStatusSocket() {
-      if (!shouldUseDeviceApi()) return;
-      if (!["http:", "https:"].includes(location.protocol)) return;
-      const protocol = location.protocol === "https:" ? "wss:" : "ws:";
-      wsClient = new WebSocket(`${protocol}//${location.host}/ws`);
-      wsClient.addEventListener("message", (event) => {
-        try {
-          renderStatus(normalizeStatus(JSON.parse(event.data)));
-        } catch {
-          // Ignore malformed status frames.
-        }
-      });
-    }
-
-    bindEvents();
-    renderAll();
-    startStatusLoop();
+    bindUi();
+    render();
+    loadConfig().then(loadStatus).catch(() => {});
+    connectWs();
   </script>
 </body>
 </html>
