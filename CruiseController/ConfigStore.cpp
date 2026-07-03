@@ -11,13 +11,22 @@ constexpr int DEFAULT_RES_ADC = 153;
 constexpr int DEFAULT_SET_ADC = 341;
 
 Preferences prefs;
+
+uint32_t normalizeMs(uint32_t value, uint32_t fallback = DEFAULT_PULSE_MS) {
+  return value <= MAX_PULSE_MS ? value : fallback;
+}
 }
 
 String configJson;
 
 String defaultConfigJson() {
-  StaticJsonDocument<256> doc;
+  StaticJsonDocument<384> doc;
   doc["pulseMs"] = DEFAULT_PULSE_MS;
+  JsonObject timing = doc["timing"].to<JsonObject>();
+  timing["main"] = DEFAULT_PULSE_MS;
+  timing["res"] = DEFAULT_PULSE_MS;
+  timing["set"] = DEFAULT_PULSE_MS;
+  timing["cancel"] = DEFAULT_PULSE_MS;
   JsonObject learned = doc["learned"].to<JsonObject>();
   learned["main"] = DEFAULT_MAIN_ADC;
   learned["cancel"] = DEFAULT_CANCEL_ADC;
@@ -36,7 +45,11 @@ void beginConfigStore() {
   StaticJsonDocument<1024> doc;
   if (configJson.length() == 0 || !parseConfig(doc)) {
     resetConfig();
+    return;
   }
+
+  serializeJson(doc, configJson);
+  prefs.putString("config", configJson);
 }
 
 bool parseConfig(StaticJsonDocument<1024>& doc) {
@@ -45,9 +58,14 @@ bool parseConfig(StaticJsonDocument<1024>& doc) {
   if (!doc["pulseMs"].is<uint32_t>()) return false;
 
   uint32_t pulseMs = doc["pulseMs"] | DEFAULT_PULSE_MS;
-  if (pulseMs > MAX_PULSE_MS) {
-    doc["pulseMs"] = DEFAULT_PULSE_MS;
-  }
+  pulseMs = normalizeMs(pulseMs);
+  doc["pulseMs"] = pulseMs;
+
+  JsonObject timing = doc["timing"].to<JsonObject>();
+  timing["main"] = normalizeMs(timing["main"] | pulseMs, pulseMs);
+  timing["res"] = normalizeMs(timing["res"] | pulseMs, pulseMs);
+  timing["set"] = normalizeMs(timing["set"] | pulseMs, pulseMs);
+  timing["cancel"] = normalizeMs(timing["cancel"] | pulseMs, pulseMs);
 
   JsonObject learned = doc["learned"].to<JsonObject>();
   if (!learned["main"].is<int>()) learned["main"] = DEFAULT_MAIN_ADC;
@@ -63,12 +81,15 @@ void saveConfigJson(const String& json) {
   if (err) return;
 
   uint32_t pulseMs = doc["pulseMs"] | DEFAULT_PULSE_MS;
-  if (pulseMs > MAX_PULSE_MS) {
-    pulseMs = DEFAULT_PULSE_MS;
-  }
+  pulseMs = normalizeMs(pulseMs);
 
-  StaticJsonDocument<256> normalized;
+  StaticJsonDocument<384> normalized;
   normalized["pulseMs"] = pulseMs;
+  JsonObject timing = normalized["timing"].to<JsonObject>();
+  timing["main"] = normalizeMs(doc["timing"]["main"] | pulseMs, pulseMs);
+  timing["res"] = normalizeMs(doc["timing"]["res"] | pulseMs, pulseMs);
+  timing["set"] = normalizeMs(doc["timing"]["set"] | pulseMs, pulseMs);
+  timing["cancel"] = normalizeMs(doc["timing"]["cancel"] | pulseMs, pulseMs);
   JsonObject learned = normalized["learned"].to<JsonObject>();
   learned["main"] = constrain(doc["learned"]["main"] | DEFAULT_MAIN_ADC, 0, 4095);
   learned["cancel"] = constrain(doc["learned"]["cancel"] | DEFAULT_CANCEL_ADC, 0, 4095);
@@ -84,6 +105,8 @@ void resetConfig() {
 
 uint32_t getTimingMs(const char* key, uint32_t fallback) {
   if (String(key) == "pulseMs") return getPulseMs();
+  uint32_t value = getPulseMsForOutput(key);
+  if (value <= MAX_PULSE_MS) return value;
   return fallback;
 }
 
@@ -92,6 +115,14 @@ uint32_t getPulseMs() {
   if (!parseConfig(doc)) return DEFAULT_PULSE_MS;
 
   return doc["pulseMs"] | DEFAULT_PULSE_MS;
+}
+
+uint32_t getPulseMsForOutput(const char* key) {
+  StaticJsonDocument<1024> doc;
+  if (!parseConfig(doc)) return DEFAULT_PULSE_MS;
+
+  uint32_t fallback = doc["pulseMs"] | DEFAULT_PULSE_MS;
+  return normalizeMs(doc["timing"][key] | fallback, fallback);
 }
 
 int getLearnedAdc(const char* key) {

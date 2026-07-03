@@ -14,6 +14,11 @@ String buildStatusJson() {
   doc["adc"] = getCruiseAdc();
   doc["button"] = getCruiseButton();
   doc["pulseMs"] = getPulseMs();
+  JsonObject timing = doc["timing"].to<JsonObject>();
+  timing["main"] = getPulseMsForOutput("main");
+  timing["res"] = getPulseMsForOutput("res");
+  timing["set"] = getPulseMsForOutput("set");
+  timing["cancel"] = getPulseMsForOutput("cancel");
 
   JsonObject outputs = doc["outputs"].to<JsonObject>();
   outputs["main"] = getOutputState("main");

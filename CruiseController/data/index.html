@@ -514,11 +514,18 @@
       adc: 0,
       button: "NONE",
       pulseMs: 200,
+      timing: { main: 200, res: 200, set: 200, cancel: 200 },
       outputs: { main: false, res: false, set: false, brake: false }
     };
 
     const defaultConfig = {
       pulseMs: 200,
+      timing: {
+        main: 200,
+        res: 200,
+        set: 200,
+        cancel: 200
+      },
       learned: {
         main: 0,
         cancel: 96,
@@ -551,6 +558,7 @@
         adc: Number(next?.adc) || 0,
         button: String(next?.button || "NONE"),
         pulseMs: Number.isFinite(pulseMs) ? pulseMs : config.pulseMs,
+        timing: normalizeTiming(next?.timing, Number.isFinite(pulseMs) ? pulseMs : config.pulseMs),
         outputs: {
           main: Boolean(next?.outputs?.main),
           res: Boolean(next?.outputs?.res ?? next?.outputs?.upSet),
@@ -560,10 +568,26 @@
       };
     }
 
+    function normalizeMs(value, fallback = defaultConfig.pulseMs) {
+      const ms = Number(value);
+      return Number.isFinite(ms) ? Math.min(5000, Math.max(0, ms)) : fallback;
+    }
+
+    function normalizeTiming(next, fallback = defaultConfig.pulseMs) {
+      return {
+        main: normalizeMs(next?.main, fallback),
+        res: normalizeMs(next?.res, fallback),
+        set: normalizeMs(next?.set, fallback),
+        cancel: normalizeMs(next?.cancel, fallback)
+      };
+    }
+
     function normalizeConfig(next) {
       const pulseMs = Number(next?.pulseMs);
+      const basePulseMs = normalizeMs(pulseMs, defaultConfig.pulseMs);
       return {
-        pulseMs: Number.isFinite(pulseMs) ? Math.min(5000, Math.max(0, pulseMs)) : defaultConfig.pulseMs,
+        pulseMs: basePulseMs,
+        timing: normalizeTiming(next?.timing, basePulseMs),
         learned: {
           main: Number.isFinite(Number(next?.learned?.main)) ? Number(next.learned.main) : defaultConfig.learned.main,
           cancel: Number.isFinite(Number(next?.learned?.cancel)) ? Number(next.learned.cancel) : defaultConfig.learned.cancel,
@@ -583,10 +607,11 @@
       el.classList.toggle("on", Boolean(isOn));
     }
 
-    function pulseOptionsHtml() {
+    function pulseOptionsHtml(key) {
       let html = "";
+      const selectedMs = normalizeMs(config.timing?.[key], config.pulseMs);
       for (let ms = 0; ms <= 5000; ms += 100) {
-        html += `<option value="${ms}"${ms === config.pulseMs ? " selected" : ""}>${ms} ms</option>`;
+        html += `<option value="${ms}"${ms === selectedMs ? " selected" : ""}>${ms} ms</option>`;
       }
       return html;
     }
@@ -622,11 +647,15 @@
       render();
     }
 
-    async function saveConfig(pulseMs = config.pulseMs) {
+    async function saveConfig(key = null, pulseMs = config.pulseMs) {
       const value = Number(pulseMs);
+      const nextTiming = { ...config.timing };
+      if (key) {
+        nextTiming[key] = Math.min(5000, Math.max(0, Number.isFinite(value) ? value : 200));
+      }
       config = normalizeConfig({
         ...config,
-        pulseMs: Math.min(5000, Math.max(0, Number.isFinite(value) ? value : 200))
+        timing: nextTiming
       });
       localStorage.setItem("cc-s3.config", JSON.stringify(config));
       if (shouldUseDeviceApi()) {
@@ -643,6 +672,7 @@
       }
       status = normalizeStatus(await apiJson("/api/status"));
       config.pulseMs = status.pulseMs;
+      config.timing = status.timing;
       render();
     }
 
@@ -661,7 +691,7 @@
     }
 
     function pulse(name) {
-      const command = { type: "output", name, durationMs: config.pulseMs };
+      const command = { type: "output", name, durationMs: normalizeMs(config.timing?.[name], config.pulseMs) };
       if (wsClient && wsClient.readyState === WebSocket.OPEN) {
         wsClient.send(JSON.stringify(command));
         return;
@@ -688,7 +718,7 @@
     function renderCruiseSwitches() {
       const root = document.getElementById("cruiseSwitches");
       if (!root) return;
-      const renderKey = JSON.stringify({ learning, pulseMs: config.pulseMs, learned: config.learned });
+      const renderKey = JSON.stringify({ learning, timing: config.timing, learned: config.learned });
       if (root.dataset.renderKey === renderKey) return;
       root.dataset.renderKey = renderKey;
       root.innerHTML = switchItems.map(([key, pos, label]) => `
@@ -699,7 +729,7 @@
           <div class="switch-meta">
             <span>ADC${config.learned[key]}</span>
             <select class="switch-ms" data-pulse-ms="${key}" aria-label="${label} output time">
-              ${pulseOptionsHtml()}
+              ${pulseOptionsHtml(key)}
             </select>
           </div>
         </div>
@@ -711,7 +741,7 @@
         select.addEventListener("click", (event) => event.stopPropagation());
         select.addEventListener("change", (event) => {
           event.stopPropagation();
-          saveConfig(event.currentTarget.value).catch(() => {
+          saveConfig(event.currentTarget.dataset.pulseMs, event.currentTarget.value).catch(() => {
             document.getElementById("controlMessage").textContent = "保存に失敗しました";
           });
         });

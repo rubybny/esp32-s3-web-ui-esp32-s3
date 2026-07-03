@@ -100,7 +100,7 @@ void updateCruiseInput() {
 
   setOutputState(outputName, true);
   activeInputOutput = outputName;
-  minOutputUntil = now + getPulseMs();
+  minOutputUntil = now + getPulseMsForOutput(outputName.c_str());
 }
 
 int getCruiseAdc() {
