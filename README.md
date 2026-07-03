@@ -131,6 +131,7 @@ Removed from this dedicated version:
 - `GET /api/status`
 - `GET /api/config`
 - `POST /api/config`
+- `POST /api/learn`
 - `POST /api/output`
 - `POST /api/reset`
 - `WebSocket /ws`
@@ -157,7 +158,22 @@ cancel
 
 ```json
 {
-  "pulseMs": 200
+  "pulseMs": 200,
+  "learned": {
+    "main": 0,
+    "cancel": 96,
+    "res": 153,
+    "set": 341
+  }
+}
+```
+
+`POST /api/learn`:
+
+```json
+{
+  "name": "main",
+  "adc": 0
 }
 ```
 

@@ -6,6 +6,7 @@
 
 namespace {
 constexpr uint32_t DEBOUNCE_MS = 60;
+constexpr int DETECT_THRESHOLD = 70;
 
 int currentAdc = 4095;
 String candidateButton = "NONE";
@@ -18,11 +19,31 @@ bool elapsed(uint32_t now, uint32_t target) {
 }
 
 String detectCruiseButton(int adc) {
-  if (adc <= 50) return "MAIN";
-  if (adc >= 65 && adc <= 125) return "CANCEL";
-  if (adc >= 130 && adc <= 220) return "RES+";
-  if (adc >= 260 && adc <= 520) return "SET-";
-  return "NONE";
+  struct Entry {
+    const char* key;
+    const char* label;
+  };
+
+  const Entry entries[] = {
+      {"main", "MAIN"},
+      {"cancel", "CANCEL"},
+      {"res", "RES+"},
+      {"set", "SET-"},
+  };
+
+  int bestDiff = DETECT_THRESHOLD + 1;
+  const char* bestLabel = "NONE";
+
+  for (const auto& entry : entries) {
+    int learned = getLearnedAdc(entry.key);
+    int diff = abs(adc - learned);
+    if (diff < bestDiff) {
+      bestDiff = diff;
+      bestLabel = entry.label;
+    }
+  }
+
+  return bestDiff <= DETECT_THRESHOLD ? String(bestLabel) : String("NONE");
 }
 
 String outputNameForButton(const String& button) {

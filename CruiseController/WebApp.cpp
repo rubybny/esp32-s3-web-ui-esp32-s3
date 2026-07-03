@@ -140,6 +140,24 @@ void setupRoutes() {
                        });
       });
 
+  server.on(
+      "/api/learn",
+      HTTP_POST,
+      [](AsyncWebServerRequest*) {},
+      nullptr,
+      [](AsyncWebServerRequest* request, uint8_t* data, size_t len, size_t index, size_t total) {
+        handleJsonBody(request, data, len, index, total,
+                       [](AsyncWebServerRequest* req, StaticJsonDocument<1024>& doc) {
+                         String name = doc["name"] | "";
+                         int adc = doc["adc"] | 0;
+                         if (!setLearnedAdc(name.c_str(), adc)) {
+                           sendError(req, 400, "invalid learn target");
+                           return;
+                         }
+                         sendJson(req, configJson);
+                       });
+      });
+
   server.on("/api/reset", HTTP_POST, [](AsyncWebServerRequest* request) {
     resetConfig();
     resetOutputs();

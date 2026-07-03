@@ -5,6 +5,10 @@
 namespace {
 constexpr uint32_t DEFAULT_PULSE_MS = 200;
 constexpr uint32_t MAX_PULSE_MS = 5000;
+constexpr int DEFAULT_MAIN_ADC = 0;
+constexpr int DEFAULT_CANCEL_ADC = 96;
+constexpr int DEFAULT_RES_ADC = 153;
+constexpr int DEFAULT_SET_ADC = 341;
 
 Preferences prefs;
 }
@@ -12,8 +16,13 @@ Preferences prefs;
 String configJson;
 
 String defaultConfigJson() {
-  StaticJsonDocument<128> doc;
+  StaticJsonDocument<256> doc;
   doc["pulseMs"] = DEFAULT_PULSE_MS;
+  JsonObject learned = doc["learned"].to<JsonObject>();
+  learned["main"] = DEFAULT_MAIN_ADC;
+  learned["cancel"] = DEFAULT_CANCEL_ADC;
+  learned["res"] = DEFAULT_RES_ADC;
+  learned["set"] = DEFAULT_SET_ADC;
 
   String json;
   serializeJson(doc, json);
@@ -39,6 +48,12 @@ bool parseConfig(StaticJsonDocument<1024>& doc) {
   if (pulseMs == 0 || pulseMs > MAX_PULSE_MS) {
     doc["pulseMs"] = DEFAULT_PULSE_MS;
   }
+
+  JsonObject learned = doc["learned"].to<JsonObject>();
+  if (!learned["main"].is<int>()) learned["main"] = DEFAULT_MAIN_ADC;
+  if (!learned["cancel"].is<int>()) learned["cancel"] = DEFAULT_CANCEL_ADC;
+  if (!learned["res"].is<int>()) learned["res"] = DEFAULT_RES_ADC;
+  if (!learned["set"].is<int>()) learned["set"] = DEFAULT_SET_ADC;
   return true;
 }
 
@@ -52,8 +67,13 @@ void saveConfigJson(const String& json) {
     pulseMs = DEFAULT_PULSE_MS;
   }
 
-  StaticJsonDocument<128> normalized;
+  StaticJsonDocument<256> normalized;
   normalized["pulseMs"] = pulseMs;
+  JsonObject learned = normalized["learned"].to<JsonObject>();
+  learned["main"] = constrain(doc["learned"]["main"] | DEFAULT_MAIN_ADC, 0, 4095);
+  learned["cancel"] = constrain(doc["learned"]["cancel"] | DEFAULT_CANCEL_ADC, 0, 4095);
+  learned["res"] = constrain(doc["learned"]["res"] | DEFAULT_RES_ADC, 0, 4095);
+  learned["set"] = constrain(doc["learned"]["set"] | DEFAULT_SET_ADC, 0, 4095);
   serializeJson(normalized, configJson);
   prefs.putString("config", configJson);
 }
@@ -72,4 +92,25 @@ uint32_t getPulseMs() {
   if (!parseConfig(doc)) return DEFAULT_PULSE_MS;
 
   return doc["pulseMs"] | DEFAULT_PULSE_MS;
+}
+
+int getLearnedAdc(const char* key) {
+  StaticJsonDocument<1024> doc;
+  if (!parseConfig(doc)) return 0;
+
+  return doc["learned"][key] | 0;
+}
+
+bool setLearnedAdc(const char* key, int adc) {
+  String name(key);
+  if (name != "main" && name != "cancel" && name != "res" && name != "set") return false;
+
+  StaticJsonDocument<1024> doc;
+  if (!parseConfig(doc)) return false;
+
+  doc["learned"][key] = constrain(adc, 0, 4095);
+  String json;
+  serializeJson(doc, json);
+  saveConfigJson(json);
+  return true;
 }

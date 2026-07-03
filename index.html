@@ -170,6 +170,52 @@
 
     .value.small { font-size: 20px; }
 
+    .monitor-section {
+      padding: 2px 2px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .monitor-section:last-child {
+      border-bottom: 0;
+    }
+
+    .monitor-section h2 {
+      margin: 0;
+      padding: 10px 0 8px;
+      color: var(--muted);
+      font-size: 15px;
+      font-weight: 560;
+      letter-spacing: .02em;
+    }
+
+    .readout-list {
+      display: grid;
+      gap: 0;
+    }
+
+    .readout {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      min-height: 62px;
+      padding: 11px 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .readout .label {
+      font-size: 15px;
+    }
+
+    .readout .value {
+      font-size: 28px;
+      text-align: right;
+    }
+
+    .readout .status-pill {
+      flex: 0 0 auto;
+    }
+
     .status-pill {
       display: inline-grid;
       place-items: center;
@@ -192,6 +238,120 @@
     .control-grid {
       display: grid;
       gap: 10px;
+    }
+
+    .steering-status {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 20px;
+      border-bottom: 1px solid var(--line);
+      padding: 10px 2px 18px;
+      margin-bottom: 14px;
+    }
+
+    .steering-status .value {
+      font-size: 30px;
+    }
+
+    .learn-action {
+      min-height: 42px;
+      min-width: 86px;
+      padding: 8px 12px;
+      border-color: rgba(37, 99, 235, .35);
+      background: #eff6ff;
+      color: #1d4ed8;
+      font-size: 15px;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    .learn-action.active {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .switch-face {
+      position: relative;
+      min-height: 318px;
+      aspect-ratio: 1;
+      max-width: 390px;
+      margin: 0 auto;
+      border-radius: 999px;
+      background:
+        radial-gradient(circle at 50% 50%, transparent 0 43%, rgba(37, 99, 235, .055) 44% 58%, transparent 59%);
+      padding: 18px;
+    }
+
+    .switch-face::before {
+      content: "";
+      position: absolute;
+      inset: 22px;
+      border-radius: 999px;
+      border: 8px solid rgba(37, 99, 235, .075);
+      box-shadow: inset 0 0 0 1px rgba(37, 99, 235, .07);
+      pointer-events: none;
+    }
+
+    .switch-grid {
+      position: absolute;
+      inset: 0;
+    }
+
+    .switch-item {
+      position: absolute;
+      z-index: 2;
+      width: min(112px, 30vw);
+      transform: translate(-50%, -50%);
+      display: grid;
+      justify-items: center;
+      text-align: center;
+      gap: 4px;
+    }
+
+    .switch-item.u { left: 50%; top: 18%; }
+    .switch-item.r { left: 78%; top: 50%; }
+    .switch-item.c { left: 50%; top: 50%; }
+    .switch-item.d { left: 50%; top: 82%; }
+
+    .switch-control {
+      display: inline-grid;
+      place-items: center;
+      min-height: 0;
+      border: 0;
+      border-radius: 999px;
+      background: transparent;
+      box-shadow: none;
+      padding: 4px 9px;
+      text-align: center;
+      color: var(--text);
+      line-height: 1.2;
+    }
+
+    .switch-control.learning {
+      background: rgba(239, 246, 255, .95);
+      box-shadow: 0 6px 16px rgba(37, 99, 235, .12);
+      color: #1d4ed8;
+    }
+
+    .switch-name {
+      font-size: 17px;
+      font-weight: 520;
+      line-height: 1.1;
+      overflow-wrap: anywhere;
+    }
+
+    .switch-meta {
+      display: grid;
+      justify-content: center;
+      align-items: center;
+      gap: 2px;
+      color: var(--muted);
+      font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+      font-size: 11px;
+      font-weight: 500;
+      margin-top: 4px;
     }
 
     .control-button {
@@ -232,6 +392,8 @@
       .app { padding-inline: 22px; }
       .grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
       .grid.four, .control-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+      .readout-list.two { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 26px; }
+      .readout-list.four { grid-template-columns: repeat(4, minmax(0, 1fr)); column-gap: 22px; }
     }
   </style>
 </head>
@@ -245,36 +407,36 @@
 
     <main>
       <section id="monitor" class="view active">
-        <div class="panel">
+        <div class="monitor-section">
           <h2>Input</h2>
-          <div class="grid two">
-            <div class="metric">
+          <div class="readout-list two">
+            <div class="readout">
               <div class="label">ADC GPIO4</div>
               <div id="statusAdc" class="value">0</div>
             </div>
-            <div class="metric">
+            <div class="readout">
               <div class="label">Button</div>
               <div id="statusButton" class="value small">NONE</div>
             </div>
           </div>
         </div>
 
-        <div class="panel">
+        <div class="monitor-section">
           <h2>Outputs</h2>
-          <div class="grid two four">
-            <div class="metric">
+          <div class="readout-list four">
+            <div class="readout">
               <div class="label">MAIN</div>
               <div id="outMain" class="status-pill">OFF</div>
             </div>
-            <div class="metric">
+            <div class="readout">
               <div class="label">RES+</div>
               <div id="outRes" class="status-pill">OFF</div>
             </div>
-            <div class="metric">
+            <div class="readout">
               <div class="label">SET-</div>
               <div id="outSet" class="status-pill">OFF</div>
             </div>
-            <div class="metric">
+            <div class="readout">
               <div class="label">CANCEL</div>
               <div id="outCancel" class="status-pill">OFF</div>
             </div>
@@ -297,12 +459,15 @@
         </div>
 
         <div class="panel">
-          <h2>Manual</h2>
-          <div class="control-grid">
-            <button class="control-button" data-pulse="main" type="button">MAIN</button>
-            <button class="control-button" data-pulse="res" type="button">RES+</button>
-            <button class="control-button" data-pulse="set" type="button">SET-</button>
-            <button class="control-button cancel" data-pulse="cancel" type="button">CANCEL</button>
+          <div class="steering-status">
+            <div>
+              <div class="label">ADCin living</div>
+              <div id="controlAdc" class="value">0</div>
+            </div>
+            <button id="learnButton" class="learn-action" type="button">Learn</button>
+          </div>
+          <div class="switch-face">
+            <div id="cruiseSwitches" class="switch-grid"></div>
           </div>
         </div>
       </section>
@@ -352,10 +517,28 @@
       outputs: { main: false, res: false, set: false, brake: false }
     };
 
+    const defaultConfig = {
+      pulseMs: 200,
+      learned: {
+        main: 0,
+        cancel: 96,
+        res: 153,
+        set: 341
+      }
+    };
+
+    const switchItems = [
+      ["res", "u", "RES+"],
+      ["main", "r", "MAIN"],
+      ["cancel", "c", "CANCEL"],
+      ["set", "d", "SET-"]
+    ];
+
     let status = structuredClone(defaultStatus);
-    let config = { pulseMs: 200 };
+    let config = structuredClone(defaultConfig);
     let wsClient = null;
     let reconnectTimer = null;
+    let learning = false;
 
     function shouldUseDeviceApi() {
       return location.hostname === "192.168.4.1" || location.hostname === "cc-s3.local" || location.hostname.endsWith(".local");
@@ -376,6 +559,18 @@
       };
     }
 
+    function normalizeConfig(next) {
+      return {
+        pulseMs: Number(next?.pulseMs) || defaultConfig.pulseMs,
+        learned: {
+          main: Number.isFinite(Number(next?.learned?.main)) ? Number(next.learned.main) : defaultConfig.learned.main,
+          cancel: Number.isFinite(Number(next?.learned?.cancel)) ? Number(next.learned.cancel) : defaultConfig.learned.cancel,
+          res: Number.isFinite(Number(next?.learned?.res)) ? Number(next.learned.res) : defaultConfig.learned.res,
+          set: Number.isFinite(Number(next?.learned?.set)) ? Number(next.learned.set) : defaultConfig.learned.set
+        }
+      };
+    }
+
     function setText(id, text) {
       document.getElementById(id).textContent = text;
     }
@@ -389,6 +584,7 @@
     function render() {
       setText("statusAdc", status.adc);
       setText("statusButton", status.button);
+      setText("controlAdc", status.adc);
       setText("pulseView", status.pulseMs);
       document.getElementById("pulseMs").value = String(config.pulseMs);
       document.getElementById("configJson").value = JSON.stringify(config, null, 2);
@@ -396,6 +592,7 @@
       setPill("outRes", status.outputs.res);
       setPill("outSet", status.outputs.set);
       setPill("outCancel", status.outputs.brake);
+      renderCruiseSwitches();
     }
 
     async function apiJson(path, options = {}) {
@@ -410,16 +607,19 @@
     async function loadConfig() {
       try {
         const next = shouldUseDeviceApi() ? await apiJson("/api/config") : JSON.parse(localStorage.getItem("cc-s3.config") || "{}");
-        config = { pulseMs: Number(next.pulseMs) || 200 };
+        config = normalizeConfig(next);
       } catch {
-        config = { pulseMs: 200 };
+        config = structuredClone(defaultConfig);
       }
       render();
     }
 
     async function saveConfig() {
       const value = Number(document.getElementById("pulseMs").value);
-      config = { pulseMs: Math.min(5000, Math.max(50, Number.isFinite(value) ? value : 200)) };
+      config = normalizeConfig({
+        ...config,
+        pulseMs: Math.min(5000, Math.max(50, Number.isFinite(value) ? value : 200))
+      });
       localStorage.setItem("cc-s3.config", JSON.stringify(config));
       if (shouldUseDeviceApi()) {
         await apiJson("/api/config", { method: "POST", body: JSON.stringify(config) });
@@ -439,6 +639,20 @@
       render();
     }
 
+    async function learnSwitch(name) {
+      config.learned[name] = status.adc;
+      localStorage.setItem("cc-s3.config", JSON.stringify(config));
+      if (shouldUseDeviceApi()) {
+        config = normalizeConfig(await apiJson("/api/learn", {
+          method: "POST",
+          body: JSON.stringify({ name, adc: status.adc })
+        }));
+      }
+      learning = false;
+      render();
+      document.getElementById("controlMessage").textContent = `${name.toUpperCase()} ADC ${status.adc}`;
+    }
+
     function pulse(name) {
       const command = { type: "output", name, durationMs: config.pulseMs };
       if (wsClient && wsClient.readyState === WebSocket.OPEN) {
@@ -452,6 +666,37 @@
           render();
         })
         .catch(() => {});
+    }
+
+    function handleSwitchPress(name) {
+      if (learning) {
+        learnSwitch(name).catch(() => {
+          document.getElementById("controlMessage").textContent = "学習に失敗しました";
+        });
+        return;
+      }
+      pulse(name);
+    }
+
+    function renderCruiseSwitches() {
+      const root = document.getElementById("cruiseSwitches");
+      if (!root) return;
+      root.innerHTML = switchItems.map(([key, pos, label]) => `
+        <div class="switch-item ${pos}">
+          <button class="switch-control${learning ? " learning" : ""}" data-switch="${key}" type="button">
+            <span class="switch-name">${label}</span>
+          </button>
+          <div class="switch-meta">
+            <span>ADC${config.learned[key]}</span>
+            <span>${config.pulseMs}ms</span>
+          </div>
+        </div>
+      `).join("");
+      root.querySelectorAll("[data-switch]").forEach((button) => {
+        button.addEventListener("click", () => handleSwitchPress(button.dataset.switch));
+      });
+      document.getElementById("learnButton").classList.toggle("active", learning);
+      document.getElementById("learnButton").textContent = learning ? "Learning" : "Learn";
     }
 
     function connectStatusSocket() {
@@ -490,6 +735,12 @@
         button.addEventListener("click", () => pulse(button.dataset.pulse));
       });
 
+      document.getElementById("learnButton").addEventListener("click", () => {
+        learning = !learning;
+        renderCruiseSwitches();
+        document.getElementById("controlMessage").textContent = learning ? "学習する項目を押してください" : "";
+      });
+
       document.getElementById("saveConfig").addEventListener("click", () => {
         saveConfig().catch(() => {
           document.getElementById("controlMessage").textContent = "保存に失敗しました";
@@ -512,7 +763,7 @@
       });
 
       document.getElementById("resetConfig").addEventListener("click", async () => {
-        config = { pulseMs: 200 };
+        config = structuredClone(defaultConfig);
         if (shouldUseDeviceApi()) {
           await apiJson("/api/reset", { method: "POST", body: "{}" });
         }
