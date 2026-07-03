@@ -660,6 +660,7 @@
       localStorage.setItem("cc-s3.config", JSON.stringify(config));
       if (shouldUseDeviceApi()) {
         await apiJson("/api/config", { method: "POST", body: JSON.stringify(config) });
+        config = normalizeConfig(await apiJson("/api/config"));
       }
       render();
     }
@@ -759,6 +760,7 @@
         try {
           status = normalizeStatus(JSON.parse(event.data));
           config.pulseMs = status.pulseMs;
+          config.timing = status.timing;
           render();
         } catch {}
       });

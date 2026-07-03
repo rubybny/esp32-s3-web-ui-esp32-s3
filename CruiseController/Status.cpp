@@ -10,7 +10,7 @@ void setupStatusInputs() {
 }
 
 String buildStatusJson() {
-  StaticJsonDocument<384> doc;
+  StaticJsonDocument<512> doc;
   doc["adc"] = getCruiseAdc();
   doc["button"] = getCruiseButton();
   doc["pulseMs"] = getPulseMs();

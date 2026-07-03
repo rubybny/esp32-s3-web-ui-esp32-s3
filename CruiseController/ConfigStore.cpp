@@ -15,19 +15,24 @@ Preferences prefs;
 uint32_t normalizeMs(uint32_t value, uint32_t fallback = DEFAULT_PULSE_MS) {
   return value <= MAX_PULSE_MS ? value : fallback;
 }
+
+JsonObject ensureObject(JsonDocument& doc, const char* key) {
+  if (doc[key].is<JsonObject>()) return doc[key].as<JsonObject>();
+  return doc[key].to<JsonObject>();
+}
 }
 
 String configJson;
 
 String defaultConfigJson() {
-  StaticJsonDocument<384> doc;
+  StaticJsonDocument<512> doc;
   doc["pulseMs"] = DEFAULT_PULSE_MS;
-  JsonObject timing = doc["timing"].to<JsonObject>();
+  JsonObject timing = ensureObject(doc, "timing");
   timing["main"] = DEFAULT_PULSE_MS;
   timing["res"] = DEFAULT_PULSE_MS;
   timing["set"] = DEFAULT_PULSE_MS;
   timing["cancel"] = DEFAULT_PULSE_MS;
-  JsonObject learned = doc["learned"].to<JsonObject>();
+  JsonObject learned = ensureObject(doc, "learned");
   learned["main"] = DEFAULT_MAIN_ADC;
   learned["cancel"] = DEFAULT_CANCEL_ADC;
   learned["res"] = DEFAULT_RES_ADC;
@@ -61,13 +66,13 @@ bool parseConfig(StaticJsonDocument<1024>& doc) {
   pulseMs = normalizeMs(pulseMs);
   doc["pulseMs"] = pulseMs;
 
-  JsonObject timing = doc["timing"].to<JsonObject>();
+  JsonObject timing = ensureObject(doc, "timing");
   timing["main"] = normalizeMs(timing["main"] | pulseMs, pulseMs);
   timing["res"] = normalizeMs(timing["res"] | pulseMs, pulseMs);
   timing["set"] = normalizeMs(timing["set"] | pulseMs, pulseMs);
   timing["cancel"] = normalizeMs(timing["cancel"] | pulseMs, pulseMs);
 
-  JsonObject learned = doc["learned"].to<JsonObject>();
+  JsonObject learned = ensureObject(doc, "learned");
   if (!learned["main"].is<int>()) learned["main"] = DEFAULT_MAIN_ADC;
   if (!learned["cancel"].is<int>()) learned["cancel"] = DEFAULT_CANCEL_ADC;
   if (!learned["res"].is<int>()) learned["res"] = DEFAULT_RES_ADC;
@@ -83,14 +88,14 @@ void saveConfigJson(const String& json) {
   uint32_t pulseMs = doc["pulseMs"] | DEFAULT_PULSE_MS;
   pulseMs = normalizeMs(pulseMs);
 
-  StaticJsonDocument<384> normalized;
+  StaticJsonDocument<512> normalized;
   normalized["pulseMs"] = pulseMs;
-  JsonObject timing = normalized["timing"].to<JsonObject>();
+  JsonObject timing = ensureObject(normalized, "timing");
   timing["main"] = normalizeMs(doc["timing"]["main"] | pulseMs, pulseMs);
   timing["res"] = normalizeMs(doc["timing"]["res"] | pulseMs, pulseMs);
   timing["set"] = normalizeMs(doc["timing"]["set"] | pulseMs, pulseMs);
   timing["cancel"] = normalizeMs(doc["timing"]["cancel"] | pulseMs, pulseMs);
-  JsonObject learned = normalized["learned"].to<JsonObject>();
+  JsonObject learned = ensureObject(normalized, "learned");
   learned["main"] = constrain(doc["learned"]["main"] | DEFAULT_MAIN_ADC, 0, 4095);
   learned["cancel"] = constrain(doc["learned"]["cancel"] | DEFAULT_CANCEL_ADC, 0, 4095);
   learned["res"] = constrain(doc["learned"]["res"] | DEFAULT_RES_ADC, 0, 4095);
