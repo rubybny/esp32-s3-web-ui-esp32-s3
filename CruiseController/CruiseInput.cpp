@@ -6,7 +6,7 @@
 
 namespace {
 constexpr uint32_t DEBOUNCE_MS = 30;
-constexpr int DETECT_THRESHOLD = 70;
+constexpr int DETECT_THRESHOLD = 120;
 
 int currentAdc = 4095;
 String candidateButton = "NONE";
