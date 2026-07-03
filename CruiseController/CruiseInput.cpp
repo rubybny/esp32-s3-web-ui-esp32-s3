@@ -13,8 +13,9 @@ String rawButton = "NONE";
 String candidateButton = "NONE";
 String stableButton = "NONE";
 String displayButton = "NONE";
-String lastPulseButton = "NONE";
+String activeInputOutput = "";
 uint32_t candidateSince = 0;
+uint32_t minOutputUntil = 0;
 
 bool elapsed(uint32_t now, uint32_t target) {
   return static_cast<int32_t>(now - target) >= 0;
@@ -79,21 +80,27 @@ void setupCruiseInput() {
 void updateCruiseInput() {
   currentAdc = analogRead(Pins::ADC_CRUISE);
   rawButton = detectCruiseButton(currentAdc);
-  const String button = updateDebouncedButton(rawButton, millis());
+  uint32_t now = millis();
+  const String button = updateDebouncedButton(rawButton, now);
   displayButton = rawButton != "NONE" ? rawButton : button;
 
   if (rawButton == "NONE") {
-    lastPulseButton = "NONE";
+    if (activeInputOutput.length() > 0) {
+      if (elapsed(now, minOutputUntil)) {
+        resetOutputs();
+        activeInputOutput = "";
+      }
+    }
     return;
   }
 
-  if (rawButton == lastPulseButton) return;
-
   const String outputName = outputNameForButton(rawButton);
   if (outputName.length() == 0) return;
+  if (outputName == activeInputOutput) return;
 
-  pulseOutput(outputName, getPulseMs());
-  lastPulseButton = rawButton;
+  setOutputState(outputName, true);
+  activeInputOutput = outputName;
+  minOutputUntil = now + getPulseMs();
 }
 
 int getCruiseAdc() {
