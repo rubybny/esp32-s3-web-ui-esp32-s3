@@ -33,7 +33,7 @@
       line-height: 1.45;
     }
 
-    button, input, textarea { font: inherit; }
+    button, input, select, textarea { font: inherit; }
 
     button {
       min-height: 48px;
@@ -354,6 +354,18 @@
       margin-top: 4px;
     }
 
+    .switch-ms {
+      min-height: 28px;
+      width: 76px;
+      border-radius: 999px;
+      padding: 3px 8px;
+      color: var(--muted);
+      border-color: rgba(99, 112, 131, .28);
+      background: rgba(255, 255, 255, .88);
+      font-size: 11px;
+      text-align: center;
+    }
+
     .control-button {
       min-height: 74px;
       font-size: 22px;
@@ -446,19 +458,6 @@
 
       <section id="control" class="view">
         <div class="panel">
-          <h2>Pulse</h2>
-          <div class="field-row">
-            <div>
-              <div class="label">出力時間</div>
-              <div class="value small"><span id="pulseView">200</span> ms</div>
-            </div>
-            <select id="pulseMs"></select>
-          </div>
-          <button id="saveConfig" class="primary" type="button" style="margin-top: 10px;">保存</button>
-          <div id="controlMessage" class="message"></div>
-        </div>
-
-        <div class="panel">
           <div class="steering-status">
             <div>
               <div class="label">ADCin living</div>
@@ -469,6 +468,7 @@
           <div class="switch-face">
             <div id="cruiseSwitches" class="switch-grid"></div>
           </div>
+          <div id="controlMessage" class="message"></div>
         </div>
       </section>
 
@@ -583,23 +583,18 @@
       el.classList.toggle("on", Boolean(isOn));
     }
 
-    function populatePulseOptions() {
-      const select = document.getElementById("pulseMs");
-      select.innerHTML = "";
+    function pulseOptionsHtml() {
+      let html = "";
       for (let ms = 0; ms <= 5000; ms += 100) {
-        const option = document.createElement("option");
-        option.value = String(ms);
-        option.textContent = `${ms} ms`;
-        select.appendChild(option);
+        html += `<option value="${ms}"${ms === config.pulseMs ? " selected" : ""}>${ms} ms</option>`;
       }
+      return html;
     }
 
     function render() {
       setText("statusAdc", status.adc);
       setText("statusButton", status.button);
       setText("controlAdc", status.adc);
-      setText("pulseView", status.pulseMs);
-      document.getElementById("pulseMs").value = String(config.pulseMs);
       document.getElementById("configJson").value = JSON.stringify(config, null, 2);
       setPill("outMain", status.outputs.main);
       setPill("outRes", status.outputs.res);
@@ -627,8 +622,8 @@
       render();
     }
 
-    async function saveConfig() {
-      const value = Number(document.getElementById("pulseMs").value);
+    async function saveConfig(pulseMs = config.pulseMs) {
+      const value = Number(pulseMs);
       config = normalizeConfig({
         ...config,
         pulseMs: Math.min(5000, Math.max(0, Number.isFinite(value) ? value : 200))
@@ -637,7 +632,6 @@
       if (shouldUseDeviceApi()) {
         await apiJson("/api/config", { method: "POST", body: JSON.stringify(config) });
       }
-      document.getElementById("controlMessage").textContent = "保存しました";
       render();
     }
 
@@ -694,6 +688,9 @@
     function renderCruiseSwitches() {
       const root = document.getElementById("cruiseSwitches");
       if (!root) return;
+      const renderKey = JSON.stringify({ learning, pulseMs: config.pulseMs, learned: config.learned });
+      if (root.dataset.renderKey === renderKey) return;
+      root.dataset.renderKey = renderKey;
       root.innerHTML = switchItems.map(([key, pos, label]) => `
         <div class="switch-item ${pos}">
           <button class="switch-control${learning ? " learning" : ""}" data-switch="${key}" type="button">
@@ -701,12 +698,23 @@
           </button>
           <div class="switch-meta">
             <span>ADC${config.learned[key]}</span>
-            <span>${config.pulseMs}ms</span>
+            <select class="switch-ms" data-pulse-ms="${key}" aria-label="${label} output time">
+              ${pulseOptionsHtml()}
+            </select>
           </div>
         </div>
       `).join("");
       root.querySelectorAll("[data-switch]").forEach((button) => {
         button.addEventListener("click", () => handleSwitchPress(button.dataset.switch));
+      });
+      root.querySelectorAll("[data-pulse-ms]").forEach((select) => {
+        select.addEventListener("click", (event) => event.stopPropagation());
+        select.addEventListener("change", (event) => {
+          event.stopPropagation();
+          saveConfig(event.currentTarget.value).catch(() => {
+            document.getElementById("controlMessage").textContent = "保存に失敗しました";
+          });
+        });
       });
       document.getElementById("learnButton").classList.toggle("active", learning);
       document.getElementById("learnButton").textContent = learning ? "Learning" : "Learn";
@@ -744,20 +752,11 @@
         });
       });
 
-      document.querySelectorAll("[data-pulse]").forEach((button) => {
-        button.addEventListener("click", () => pulse(button.dataset.pulse));
-      });
-
       document.getElementById("learnButton").addEventListener("click", () => {
         learning = !learning;
+        document.getElementById("cruiseSwitches").dataset.renderKey = "";
         renderCruiseSwitches();
         document.getElementById("controlMessage").textContent = learning ? "学習する項目を押してください" : "";
-      });
-
-      document.getElementById("saveConfig").addEventListener("click", () => {
-        saveConfig().catch(() => {
-          document.getElementById("controlMessage").textContent = "保存に失敗しました";
-        });
       });
 
       document.getElementById("reloadConfig").addEventListener("click", () => {
@@ -786,7 +785,6 @@
       });
     }
 
-    populatePulseOptions();
     bindEvents();
     render();
     loadConfig().then(loadStatus).catch(() => {});
