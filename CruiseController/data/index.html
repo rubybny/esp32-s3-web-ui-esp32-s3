@@ -183,7 +183,7 @@
       background: var(--accent);
     }
 
-    .action.brake {
+    .action.cancel {
       background: var(--danger);
     }
 
@@ -247,12 +247,12 @@
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
 
-      .action.brake {
+      .action.cancel {
         grid-column: span 2;
       }
 
       .status-grid {
-        grid-template-columns: repeat(5, minmax(0, 1fr));
+        grid-template-columns: repeat(4, minmax(0, 1fr));
       }
     }
   </style>
@@ -273,7 +273,6 @@
           <div class="status" data-output-card="res"><div class="name">RES+</div><div class="state">OFF</div></div>
           <div class="status" data-output-card="set"><div class="name">SET-</div><div class="state">OFF</div></div>
           <div class="status" data-output-card="cancel"><div class="name">CANCEL</div><div class="state">OFF</div></div>
-          <div class="status" data-output-card="brake"><div class="name">BRAKE</div><div class="state">OFF</div></div>
         </div>
       </div>
       <div class="section">
@@ -304,8 +303,7 @@
           <button class="action" data-pulse="main" type="button">MAIN</button>
           <button class="action" data-pulse="res" type="button">RES+</button>
           <button class="action" data-pulse="set" type="button">SET-</button>
-          <button class="action" data-pulse="cancel" type="button">CANCEL</button>
-          <button class="action brake" data-pulse="brake" type="button">BRAKE</button>
+          <button class="action cancel" data-pulse="cancel" type="button">CANCEL</button>
         </div>
       </div>
     </section>
@@ -334,7 +332,7 @@
   <script>
     const defaultStatus = {
       pulseMs: 200,
-      outputs: { main: false, res: false, set: false, cancel: false, brake: false }
+      outputs: { main: false, res: false, set: false, cancel: false }
     };
 
     let status = structuredClone(defaultStatus);
@@ -342,7 +340,7 @@
     let ws = null;
     let reconnectTimer = null;
 
-    const outputKeys = ["main", "res", "set", "cancel", "brake"];
+    const outputKeys = ["main", "res", "set", "cancel"];
 
     function normalizeStatus(next) {
       return {
@@ -351,8 +349,7 @@
           main: Boolean(next?.outputs?.main),
           res: Boolean(next?.outputs?.res ?? next?.outputs?.upSet),
           set: Boolean(next?.outputs?.set ?? next?.outputs?.downRes),
-          cancel: Boolean(next?.outputs?.cancel),
-          brake: Boolean(next?.outputs?.brake ?? next?.outputs?.brakeOut)
+          cancel: Boolean(next?.outputs?.cancel ?? next?.outputs?.brake ?? next?.outputs?.brakeOut)
         }
       };
     }

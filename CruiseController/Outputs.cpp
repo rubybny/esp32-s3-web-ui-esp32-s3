@@ -6,7 +6,6 @@ namespace {
 bool outMain = false;
 bool outRes = false;
 bool outSet = false;
-bool outCancel = false;
 bool outBrake = false;
 uint32_t pulseUntil = 0;
 
@@ -14,7 +13,6 @@ void writeOutputPins() {
   digitalWrite(Pins::OUT_MAIN, outMain ? HIGH : LOW);
   digitalWrite(Pins::OUT_RES, outRes ? HIGH : LOW);
   digitalWrite(Pins::OUT_SET, outSet ? HIGH : LOW);
-  digitalWrite(Pins::OUT_CANCEL, outCancel ? HIGH : LOW);
   digitalWrite(Pins::OUT_BRAKE, outBrake ? HIGH : LOW);
 }
 
@@ -22,7 +20,6 @@ void clearOutputStates() {
   outMain = false;
   outRes = false;
   outSet = false;
-  outCancel = false;
   outBrake = false;
 }
 
@@ -35,7 +32,6 @@ void setupOutputPins() {
   pinMode(Pins::OUT_MAIN, OUTPUT);
   pinMode(Pins::OUT_RES, OUTPUT);
   pinMode(Pins::OUT_SET, OUTPUT);
-  pinMode(Pins::OUT_CANCEL, OUTPUT);
   pinMode(Pins::OUT_BRAKE, OUTPUT);
   resetOutputs();
 }
@@ -49,8 +45,7 @@ bool getOutputState(const String& name) {
   if (name == "main") return outMain;
   if (name == "res" || name == "upSet") return outRes;
   if (name == "set" || name == "downRes") return outSet;
-  if (name == "cancel") return outCancel;
-  if (name == "brake" || name == "brakeOut") return outBrake;
+  if (name == "cancel" || name == "brake" || name == "brakeOut") return outBrake;
   return false;
 }
 
@@ -68,9 +63,7 @@ bool setOutputState(const String& name, bool state) {
     outRes = state;
   } else if (name == "set" || name == "downRes") {
     outSet = state;
-  } else if (name == "cancel") {
-    outCancel = state;
-  } else if (name == "brake" || name == "brakeOut") {
+  } else if (name == "cancel" || name == "brake" || name == "brakeOut") {
     outBrake = state;
   }
 

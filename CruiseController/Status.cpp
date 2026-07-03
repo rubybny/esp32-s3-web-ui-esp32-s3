@@ -16,7 +16,6 @@ String buildStatusJson() {
   outputs["main"] = getOutputState("main");
   outputs["res"] = getOutputState("res");
   outputs["set"] = getOutputState("set");
-  outputs["cancel"] = getOutputState("cancel");
   outputs["brake"] = getOutputState("brake");
 
   String json;
