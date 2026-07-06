@@ -73,7 +73,7 @@ bool parseConfig(StaticJsonDocument<1024>& doc) {
   timing["cancel"] = normalizeMs(timing["cancel"] | pulseMs, pulseMs);
 
   JsonObject learned = ensureObject(doc, "learned");
-  if (!learned["main"].is<int>()) learned["main"] = DEFAULT_MAIN_ADC;
+  learned["main"] = DEFAULT_MAIN_ADC;
   if (!learned["cancel"].is<int>()) learned["cancel"] = DEFAULT_CANCEL_ADC;
   if (!learned["res"].is<int>()) learned["res"] = DEFAULT_RES_ADC;
   if (!learned["set"].is<int>()) learned["set"] = DEFAULT_SET_ADC;
@@ -96,7 +96,7 @@ void saveConfigJson(const String& json) {
   timing["set"] = normalizeMs(doc["timing"]["set"] | pulseMs, pulseMs);
   timing["cancel"] = normalizeMs(doc["timing"]["cancel"] | pulseMs, pulseMs);
   JsonObject learned = ensureObject(normalized, "learned");
-  learned["main"] = constrain(doc["learned"]["main"] | DEFAULT_MAIN_ADC, 0, 4095);
+  learned["main"] = DEFAULT_MAIN_ADC;
   learned["cancel"] = constrain(doc["learned"]["cancel"] | DEFAULT_CANCEL_ADC, 0, 4095);
   learned["res"] = constrain(doc["learned"]["res"] | DEFAULT_RES_ADC, 0, 4095);
   learned["set"] = constrain(doc["learned"]["set"] | DEFAULT_SET_ADC, 0, 4095);
@@ -140,6 +140,7 @@ int getLearnedAdc(const char* key) {
 bool setLearnedAdc(const char* key, int adc) {
   String name(key);
   if (name != "main" && name != "cancel" && name != "res" && name != "set") return false;
+  if (name == "main") adc = DEFAULT_MAIN_ADC;
 
   StaticJsonDocument<1024> doc;
   if (!parseConfig(doc)) return false;

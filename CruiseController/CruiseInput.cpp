@@ -6,7 +6,6 @@
 
 namespace {
 constexpr uint32_t DEBOUNCE_MS = 30;
-constexpr int DETECT_THRESHOLD = 300;
 
 int currentAdc = 4095;
 String rawButton = "NONE";
@@ -25,28 +24,54 @@ String detectCruiseButton(int adc) {
   struct Entry {
     const char* key;
     const char* label;
+    int value;
   };
 
-  const Entry entries[] = {
-      {"main", "MAIN"},
-      {"cancel", "CANCEL"},
-      {"res", "RES+"},
-      {"set", "SET-"},
+  Entry entries[] = {
+      {"main", "MAIN", getLearnedAdc("main")},
+      {"cancel", "CANCEL", getLearnedAdc("cancel")},
+      {"res", "RES+", getLearnedAdc("res")},
+      {"set", "SET-", getLearnedAdc("set")},
   };
 
-  int bestDiff = DETECT_THRESHOLD + 1;
-  const char* bestLabel = "NONE";
+  if (adc <= 0 && entries[0].value == 0) return String("MAIN");
+  if (adc >= 4095) return String("NONE");
 
-  for (const auto& entry : entries) {
-    int learned = getLearnedAdc(entry.key);
-    int diff = abs(adc - learned);
-    if (diff < bestDiff) {
-      bestDiff = diff;
-      bestLabel = entry.label;
+  for (size_t i = 0; i < sizeof(entries) / sizeof(entries[0]); i++) {
+    for (size_t j = i + 1; j < sizeof(entries) / sizeof(entries[0]); j++) {
+      if (entries[j].value < entries[i].value) {
+        Entry tmp = entries[i];
+        entries[i] = entries[j];
+        entries[j] = tmp;
+      }
     }
   }
 
-  return bestDiff <= DETECT_THRESHOLD ? String(bestLabel) : String("NONE");
+  for (size_t i = 0; i < sizeof(entries) / sizeof(entries[0]); i++) {
+    const Entry& entry = entries[i];
+    if (entry.value <= 0 && String(entry.key) != "main") continue;
+    if (entry.value >= 4095) continue;
+    if (String(entry.key) == "main") continue;
+
+    int lower = 1;
+    int upper = 4094;
+
+    for (int j = static_cast<int>(i) - 1; j >= 0; j--) {
+      if (entries[j].value <= 0 || entries[j].value >= 4095) continue;
+      lower = ((entries[j].value + entry.value) / 2) + 1;
+      break;
+    }
+
+    for (size_t j = i + 1; j < sizeof(entries) / sizeof(entries[0]); j++) {
+      if (entries[j].value <= 0 || entries[j].value >= 4095) continue;
+      upper = (entry.value + entries[j].value) / 2;
+      break;
+    }
+
+    if (adc >= lower && adc <= upper) return String(entry.label);
+  }
+
+  return String("NONE");
 }
 
 String outputNameForButton(const String& button) {
