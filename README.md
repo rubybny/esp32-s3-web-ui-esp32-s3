@@ -2,7 +2,11 @@
 
 Arduino IDE sketch for the ESP32-S3 cruise-control output unit.
 
-The ESP32-S3 runs as a Wi-Fi access point, serves the Web UI from LittleFS, accepts REST/WebSocket commands, and drives four PhotoMOS input LEDs.
+The ESP32-S3 reads the cruise switch resistor ladder on an ADC pin and
+drives four PhotoMOS input LEDs accordingly. There is no Wi-Fi, no web UI,
+and no runtime configuration API: all tuning (ADC thresholds, pulse
+timing) is done in [`Config.h`](CruiseController/Config.h) before
+flashing. Status and events are printed over USB serial for use with a PC.
 
 ## Open
 
@@ -12,33 +16,9 @@ Open this folder in Arduino IDE:
 CruiseController
 ```
 
-## AP
-
-- SSID: `CC-S3`
-- PASS: `ccs3setup`
-- IP: `192.168.4.1`
-
-Open from a phone after flashing:
-
-```text
-http://192.168.4.1/
-```
-
 ## Required Libraries
 
-- WiFi
-- LittleFS
-- ESP Async WebServer `3.11.2`
-- Async TCP `3.4.10`
-- ArduinoJson
-- Preferences
-
-If older `ESPAsyncWebServer` or `AsyncTCP` forks are installed, Arduino may choose the wrong one. Keep these active:
-
-```text
-ESP Async WebServer
-Async TCP
-```
+- None beyond the ESP32 Arduino core (no WiFi/LittleFS/ArduinoJson/Preferences needed).
 
 ## Compile
 
@@ -46,7 +26,7 @@ Async TCP
 arduino-cli compile --fqbn esp32:esp32:esp32s3 CruiseController
 ```
 
-## Upload Sketch
+## Upload
 
 Check the serial port:
 
@@ -62,21 +42,44 @@ arduino-cli upload -p COMx --fqbn esp32:esp32:esp32s3 CruiseController
 
 Replace `COMx` with the detected port.
 
-## Upload LittleFS
+## PC Logging
 
-The frontend is stored here:
-
-```text
-CruiseController/data/index.html
-```
-
-Upload it to the default ESP32-S3 data partition:
+Connect the ESP32-S3 to a PC over USB and open a serial monitor at
+`115200` baud, e.g.:
 
 ```powershell
-.\tools\upload_littlefs.ps1 -Port COMx
+arduino-cli monitor -p COMx -c baudrate=115200
 ```
 
-Replace `COMx` with the port shown by `arduino-cli board list`.
+The device logs a line on every debounced button change, every output
+on/off transition, and a heartbeat every 2 seconds with the current ADC
+reading and output states:
+
+```text
+[    204ms] CC-S3 cruise controller starting
+[    204ms] Ready
+[   1532ms] BUTTON NONE -> SET- (adc=341)
+[   1532ms] OUTPUT set ON (min 200ms)
+[   1732ms] OUTPUT set OFF
+[   2000ms] adc=4095 button=NONE  main=0 res=0 set=0 cancel=0
+```
+
+## Changing Tuning Values
+
+Edit the constants in [`Config.h`](CruiseController/Config.h) and reflash:
+
+- `CruiseConfig::ADC_MAIN/ADC_CANCEL/ADC_RES/ADC_SET` -- learned ADC
+  targets for each button (must stay sorted ascending).
+- `CruiseConfig::ADC_OPEN_MIN` -- readings above this are treated as
+  "not pressed".
+- `CruiseConfig::DEBOUNCE_MS` -- how long a reading must be stable before
+  it is accepted.
+- `CruiseConfig::PULSE_MAIN_MS` / `PULSE_RES_MS` / `PULSE_SET_MS` /
+  `PULSE_CANCEL_MS` -- minimum time each output stays driven once
+  activated.
+
+To re-learn an ADC target, watch the serial log while pressing the
+physical button and copy the reported `adc=` value into `Config.h`.
 
 ## GPIO
 
@@ -126,77 +129,14 @@ Removed from this dedicated version:
 - PC817 input processing
 - VIN/VOUT measurement
 
-## API
-
-- `GET /api/status`
-- `GET /api/config`
-- `POST /api/config`
-- `POST /api/learn`
-- `POST /api/output`
-- `POST /api/reset`
-- `WebSocket /ws`
-
-`POST /api/output` pulse command:
-
-```json
-{
-  "name": "main",
-  "durationMs": 200
-}
-```
-
-Valid names:
-
-```text
-main
-res
-set
-cancel
-```
-
-`POST /api/config`:
-
-```json
-{
-  "pulseMs": 200,
-  "learned": {
-    "main": 0,
-    "cancel": 96,
-    "res": 153,
-    "set": 341
-  }
-}
-```
-
-`POST /api/learn`:
-
-```json
-{
-  "name": "main",
-  "adc": 0
-}
-```
-
-`GET /api/status` and WebSocket status:
-
-```json
-{
-  "adc": 4095,
-  "button": "NONE",
-  "pulseMs": 200,
-  "outputs": {
-    "main": false,
-    "res": false,
-    "set": false,
-    "brake": false
-  }
-}
-```
-
 ## Safety Logic
 
 - Startup sets `GPIO5`, `GPIO6`, `GPIO7`, and `GPIO9` to `OUTPUT` and immediately drives all LOW.
-- A new operation clears all outputs LOW before turning the requested output ON.
+- A raw ADC reading must classify to the same button for `DEBOUNCE_MS`
+  before it is accepted -- a single noisy sample cannot fire an output.
+- A new confirmed button clears all outputs LOW before turning the
+  requested output ON.
 - Only one output can be ON at a time.
-- Pulse output defaults to `200 ms`.
-- WebSocket broadcasts status every `500 ms`.
+- Once activated, an output stays on for at least its configured pulse
+  time even if the button is released early, and turns off once the
+  button reads released and that minimum time has elapsed.

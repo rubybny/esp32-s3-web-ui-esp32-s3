@@ -3,9 +3,7 @@
 #include <Arduino.h>
 
 void setupOutputPins();
-bool isValidOutputName(const String& name);
-bool getOutputState(const String& name);
-bool setOutputState(const String& name, bool state);
-bool pulseOutput(const String& name, uint32_t durationMs);
-void updateOutputPulses();
+bool isValidOutputName(const char* name);
+bool getOutputState(const char* name);
+bool setOutputState(const char* name, bool state);
 void resetOutputs();

@@ -5,4 +5,4 @@
 void setupCruiseInput();
 void updateCruiseInput();
 int getCruiseAdc();
-String getCruiseButton();
+const char* getCruiseButton();
