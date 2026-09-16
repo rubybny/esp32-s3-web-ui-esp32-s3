@@ -148,16 +148,20 @@ cruise resistor ladder
 GND
 ```
 
-Approximate measured centers (adjust in `Config.h` once retested on the
-real hardware):
+Measured centers, confirmed against the real lever (2026-09-16):
 
-| Button | Resistance to GND (example) | Approx ADC |
-|---|---:|---:|
-| MAIN | ~0 ohm | ~0 |
-| CANCEL | ~250-300 ohm | ~60 |
-| RES+ | ~1.44 kohm | ~200 |
-| SET- | ~8.25 kohm range | ~500 |
-| Not pressed | OPEN | ~4095 |
+| Button | Approx ADC |
+|---|---:|
+| MAIN | 0 |
+| CANCEL | 96 |
+| RES+ | 153 |
+| SET- | 341 |
+| Not pressed | 4095 (true open circuit on this hardware) |
+
+CANCEL and RES+ are only 57 ADC counts apart, so their bands in `Config.h`
+are necessarily tighter than MAIN's and SET-'s. If in-hand fluctuation ever
+bridges that gap, add a decoupling capacitor on the ADC line or increase
+`AdcFilterConfig::SAMPLE_COUNT` rather than widening those bands further.
 
 ## Lever State Machine
 
@@ -222,7 +226,6 @@ under exactly the same conditions regardless of what happened before it.
 Per the current hardware spec, these are placeholders in `Config.h` pending
 real measurements and circuit decisions:
 
-- Exact ADC ranges for each button (`AdcBands::*`).
 - `StateTiming::MAIN_LONG_PRESS_MS` and `CONFIRM_MS`.
 - GPIO9's final role (`USE_BRAKE_INPUT`) and, if used, brake polarity.
 - `OUTPUT_ACTIVE_LEVEL` (depends on the final analog-switch part).

@@ -64,12 +64,22 @@ constexpr ActiveLevel BRAKE_ACTIVE_LEVEL = ActiveLevel::ACTIVE_HIGH;
 // *band*, not a single target, precisely so a bit of drift or noise does not
 // push a reading out of range.
 //
-// Measured centers (PLACEHOLDER, expect to retune from real hardware):
-//   MAIN   ~0    (switch shorted to GND)
-//   CANCEL ~60
-//   RES+   ~200
-//   SET-   ~500
-//   open (nothing pressed) reads close to 4095 (pulled up to 3.3V)
+// Measured centers, confirmed against the real lever on 2026-09-16 (open
+// build, not the placeholder guesses from the original spec text):
+//   MAIN   0     (switch shorted to GND)
+//   CANCEL 96
+//   RES+   153
+//   SET-   341
+//   open (nothing pressed) reads 4095 (pulled up to 3.3V) -- this hardware's
+//   lever really is open at rest, unlike the "~8.25kohm at rest" figure
+//   quoted in the original spec text; trust this measurement over that one.
+//
+// CANCEL and RES+ sit only 57 counts apart, so there isn't much room to
+// widen those two bands without them colliding -- if fluctuation while held
+// ever bridges that gap, that needs fixing with better analog filtering
+// (decoupling cap on the ADC line, more median samples) rather than by
+// widening these further. MAIN and SET- have much more headroom on their
+// open sides and are sized generously to absorb in-hand noise.
 //
 // Bands are intentionally narrower than the full gap between neighboring
 // centers, leaving unclassified space between them. A reading that falls in
@@ -77,28 +87,31 @@ constexpr ActiveLevel BRAKE_ACTIVE_LEVEL = ActiveLevel::ACTIVE_HIGH;
 // exactly the bug this rewrite removes (see LeverState.cpp for why).
 namespace AdcBands {
 constexpr int ADC_MAIN_MIN = 0;
-constexpr int ADC_MAIN_MAX = 25;
+constexpr int ADC_MAIN_MAX = 50;
 
-constexpr int ADC_CANCEL_MIN = 40;
-constexpr int ADC_CANCEL_MAX = 85;
+constexpr int ADC_CANCEL_MIN = 70;
+constexpr int ADC_CANCEL_MAX = 125;
 
-constexpr int ADC_RES_MIN = 150;
-constexpr int ADC_RES_MAX = 260;
+constexpr int ADC_RES_MIN = 135;
+constexpr int ADC_RES_MAX = 225;
 
-constexpr int ADC_SET_MIN = 400;
-constexpr int ADC_SET_MAX = 620;
+constexpr int ADC_SET_MIN = 260;
+constexpr int ADC_SET_MAX = 700;
 
-// Above this, the lever is considered fully released (open circuit). Must
-// stay comfortably above ADC_SET_MAX and comfortably below the true open
-// reading (~4095) to leave room for both bands' noise.
+// Above this, the lever is considered fully released. Confirmed open
+// reading is 4095, so this keeps a large margin while still sitting well
+// above ADC_SET_MAX.
 constexpr int ADC_NEUTRAL_MIN = 3800;
 
 // Once a band is the *currently confirmed* one, its effective MIN/MAX is
 // widened by this much before a reading is considered to have left it. This
 // is the "hysteresis" the spec asks for: without it, a reading sitting
 // exactly on a band edge could rapidly flip the candidate back and forth.
-// It is NOT applied to bands that are not currently confirmed.
-constexpr int ADC_HYSTERESIS = 15;
+// It is NOT applied to bands that are not currently confirmed. Kept modest
+// (rather than matching MAIN/SET-'s wider margins) because CANCEL and RES+'s
+// bands are already close together -- a larger value here would let
+// whichever of those two is currently confirmed encroach on its neighbor.
+constexpr int ADC_HYSTERESIS = 10;
 }  // namespace AdcBands
 
 // ===== ADC sampling / filtering =============================================
