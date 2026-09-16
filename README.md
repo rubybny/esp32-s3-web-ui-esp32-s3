@@ -2,7 +2,14 @@
 
 Arduino IDE sketch for the ESP32-S3 cruise-control output unit.
 
-The ESP32-S3 runs as a Wi-Fi access point, serves the Web UI from LittleFS, accepts REST/WebSocket commands, and drives four PhotoMOS input LEDs.
+The ESP32-S3 reads a 2-wire resistive cruise lever on one ADC pin, runs it
+through a debounce/hysteresis/neutral-lockout state machine, and drives up
+to four vehicle output lines. There is no Wi-Fi, no web UI, and no
+phone-based tuning: every tunable lives in
+[`Config.h`](CruiseController/Config.h) and is set before flashing.
+Behavior is observed by connecting the ESP32-S3 to a PC over USB and
+watching the serial log; a small set of serial commands can also learn ADC
+values live and store them in NVS.
 
 ## Open
 
@@ -12,33 +19,10 @@ Open this folder in Arduino IDE:
 CruiseController
 ```
 
-## AP
-
-- SSID: `CC-S3`
-- PASS: `ccs3setup`
-- IP: `192.168.4.1`
-
-Open from a phone after flashing:
-
-```text
-http://192.168.4.1/
-```
-
 ## Required Libraries
 
-- WiFi
-- LittleFS
-- ESP Async WebServer `3.11.2`
-- Async TCP `3.4.10`
-- ArduinoJson
-- Preferences
-
-If older `ESPAsyncWebServer` or `AsyncTCP` forks are installed, Arduino may choose the wrong one. Keep these active:
-
-```text
-ESP Async WebServer
-Async TCP
-```
+- ESP32 Arduino core only. `Preferences` (bundled with the core) is used for
+  optional ADC learning storage -- no WiFi/LittleFS/ArduinoJson/AsyncWebServer.
 
 ## Compile
 
@@ -46,7 +30,7 @@ Async TCP
 arduino-cli compile --fqbn esp32:esp32:esp32s3 CruiseController
 ```
 
-## Upload Sketch
+## Upload
 
 Check the serial port:
 
@@ -62,39 +46,95 @@ arduino-cli upload -p COMx --fqbn esp32:esp32:esp32s3 CruiseController
 
 Replace `COMx` with the detected port.
 
-## Upload LittleFS
+## PC Logging
 
-The frontend is stored here:
-
-```text
-CruiseController/data/index.html
-```
-
-Upload it to the default ESP32-S3 data partition:
+Connect the ESP32-S3 to a PC over USB and open a serial monitor at
+`115200` baud, e.g.:
 
 ```powershell
-.\tools\upload_littlefs.ps1 -Port COMx
+arduino-cli monitor -p COMx -c baudrate=115200
 ```
 
-Replace `COMx` with the port shown by `arduino-cli board list`.
+The device logs every confirmed lever state change, every output on/off
+transition, and (with `DEBUG_MODE` on) a heartbeat every 2 seconds showing
+raw ADC, filtered ADC, candidate, confirmed state, hold time, and output
+states:
+
+```text
+[    204ms] CC-S3 cruise controller starting (serial-only build)
+[    204ms] GPIO9 role: CANCEL output
+[    350ms] Calibration loaded: main=12 cancel=62 res=205 set=498 neutralMin=3800
+[    350ms] Ready
+[   1532ms] STATE NONE -> SET- (adc=498 filtered)
+[   1532ms] OUTPUT SET- ON
+[   1780ms] STATE SET- -> NONE (adc=4095 filtered)
+[   2000ms] HB raw=4095 filtered=4095 candidate=NONE   confirmed=NONE   held=220ms main=0 res=0 set=0 cancel=0
+```
+
+## Serial Calibration Commands
+
+With `ENABLE_ADC_LEARNING` on (default), type a single character into the
+serial monitor and press enter:
+
+| Key | Action |
+|---|---|
+| `m` | Learn MAIN center from the current filtered ADC reading |
+| `c` | Learn CANCEL center |
+| `r` | Learn RES+ center |
+| `s` | Learn SET- center |
+| `n` | Learn the NEUTRAL (released) threshold -- release the lever fully first |
+| `x` | Erase learned calibration, revert to `Config.h` defaults |
+| `p` | Print the currently effective ADC bands |
+| `h` | Help |
+
+Learned centers persist in NVS across reboots; the configured band *width*
+in `Config.h` stays fixed, only the center shifts.
+
+## Changing Tuning Values
+
+Everything is in [`Config.h`](CruiseController/Config.h):
+
+- `AdcBands::ADC_MAIN_MIN/MAX`, `ADC_CANCEL_MIN/MAX`, `ADC_RES_MIN/MAX`,
+  `ADC_SET_MIN/MAX` -- per-button ADC bands. Readings between bands (or
+  between `ADC_SET_MAX` and `ADC_NEUTRAL_MIN`) are `UNKNOWN` and never
+  drive an output -- see "Why UNKNOWN exists" below.
+- `AdcBands::ADC_NEUTRAL_MIN` -- above this, the lever is "released".
+- `AdcBands::ADC_HYSTERESIS` -- widens only the *currently confirmed*
+  band, so a reading sitting on an edge doesn't chatter.
+- `AdcFilterConfig::SAMPLE_COUNT` / `SAMPLE_INTERVAL_MS` -- median filter
+  window size and sample spacing.
+- `StateTiming::CONFIRM_MS` -- debounce time a candidate must hold before
+  becoming the confirmed lever state.
+- `StateTiming::MIN_OUTPUT_ON_MS` -- minimum time an output stays driven
+  once activated.
+- `StateTiming::MAIN_LONG_PRESS_MS` -- how long MAIN must be held to report
+  a long press (detection only; not wired to different behavior yet).
+- `OUTPUT_ACTIVE_LEVEL` -- `ACTIVE_HIGH` or `ACTIVE_LOW` for the vehicle
+  output lines, depending on the final analog-switch/PhotoMOS wiring.
+- `USE_BRAKE_INPUT` -- `0` makes GPIO9 the CANCEL output (current
+  assumption); `1` makes it a BRAKE input instead (CANCEL then has no
+  output pin -- see GPIO table below).
+- `BRAKE_ACTIVE_LEVEL`, `BrakeConfig::DEBOUNCE_MS` -- only used when
+  `USE_BRAKE_INPUT` is `1`.
+- `DEBUG_MODE` -- turn off to silence the heartbeat/verbose logging.
+- `ENABLE_ADC_LEARNING` -- turn off to disable NVS calibration entirely and
+  always use the `Config.h` constants.
 
 ## GPIO
 
-All outputs drive PhotoMOS input LEDs. `HIGH` is ON, `LOW` is OFF.
-
-| Name | GPIO | Direction | Contact Side |
+| Name | GPIO | Direction | Notes |
 |---|---:|---|---|
-| CRUISE_ADC | 4 | ADC input | cruise switch resistor ladder |
-| MAIN_OUT | 5 | output | short to 3-drive COM |
-| RES_OUT | 6 | output | short to 3-drive COM |
-| SET_OUT | 7 | output | short to 3-drive COM |
-| BRAKE_OUT | 9 | output | connect `BRAKE_12V_IN` to 3-drive gray wire |
+| ADC_CRUISE | 4 | ADC input | Lever resistor ladder, 10k pull-up to 3.3V |
+| OUT_MAIN | 5 | output | -> analog switch/PhotoMOS, vehicle MAIN line |
+| OUT_RES | 6 | output | -> analog switch/PhotoMOS, vehicle RES+ line |
+| OUT_SET | 7 | output | -> analog switch/PhotoMOS, vehicle SET- line |
+| PIN_9 | 9 | output **or** input | CANCEL output (`USE_BRAKE_INPUT=0`, default) **or** BRAKE input (`USE_BRAKE_INPUT=1`) -- see `Config.h` |
 
-`CANCEL` operation uses `BRAKE_OUT` (`GPIO9`). The dedicated CANCEL contact output is not used.
+Output polarity (`HIGH`-active vs `LOW`-active) is set once via
+`OUTPUT_ACTIVE_LEVEL` in `Config.h`, since the final analog-switch part
+(74LVC2G66 / SN74HC4066 / AQY210EHA) isn't finalized.
 
 ## ADC Input
-
-Connect the cruise switch resistor ladder to `GPIO4`.
 
 ```text
 3.3V
@@ -108,95 +148,86 @@ cruise resistor ladder
 GND
 ```
 
-Target resistance values:
+Measured centers, confirmed against the real lever (2026-09-16):
 
-| Button | Resistance to GND | Approx ADC |
-|---|---:|---:|
-| MAIN | 0 ohm | 0 |
-| CANCEL | 239.7 ohm | 96 |
-| RES+ | 389 ohm | 153 |
-| SET- | 909 ohm | 341 |
-| Not pressed | OPEN | 4095 |
+| Button | Approx ADC |
+|---|---:|
+| MAIN | 0 |
+| CANCEL | 96 |
+| RES+ | 153 |
+| SET- | 341 |
+| Not pressed | 4095 (true open circuit on this hardware) |
 
-Removed from this dedicated version:
+CANCEL and RES+ are only 57 ADC counts apart, so their bands in `Config.h`
+are necessarily tighter than MAIN's and SET-'s. If in-hand fluctuation ever
+bridges that gap, add a decoupling capacitor on the ADC line or increase
+`AdcFilterConfig::SAMPLE_COUNT` rather than widening those bands further.
 
-- ATOTO/audio outputs `GPIO35-39`
-- Illumination control
-- Brake input detection `GPIO10`
-- PC817 input processing
-- VIN/VOUT measurement
+## Lever State Machine
 
-## API
+Modules, matching the flow below:
 
-- `GET /api/status`
-- `GET /api/config`
-- `POST /api/config`
-- `POST /api/learn`
-- `POST /api/output`
-- `POST /api/reset`
-- `WebSocket /ws`
+- `AdcFilter` -- `readAdc()` / `filterAdc()`: paced raw sampling + median filter.
+- `Calibration` -- `loadAdcCalibration()` / `saveAdcCalibration()` / learn/reset: NVS-backed band centers.
+- `LeverState` -- `detectLeverState()` / `updateLeverState()`: candidate -> confirm -> neutral-lockout state machine.
+- `BrakeInput` -- optional debounced brake input, only active when `USE_BRAKE_INPUT=1`.
+- `Outputs` -- `setMainOutput()` / `setResOutput()` / `setSetOutput()` / `setCancelOutput()` / `allOutputsOff()`: mutually-exclusive, polarity-aware pin writes.
+- `ActionHandler` -- `handleLeverAction()`: combines lever state, brake override, and minimum-on-time into actual output changes.
+- `SerialCommands` / `Logger` -- calibration commands and debug/heartbeat output.
 
-`POST /api/output` pulse command:
+### Why `UNKNOWN` exists, and the neutral lockout
 
-```json
-{
-  "name": "main",
-  "durationMs": 200
-}
-```
+The lever is one ADC line shared by four buttons at different resistances.
+Releasing any button sweeps the ADC reading from that button's value back up
+toward the open-circuit reading -- numerically passing through the *other*
+buttons' ranges on the way, even though only one button was ever physically
+pressed. The previous firmware classified every reading as the nearest
+button with no gap between ranges, so that release sweep could misread as a
+brand-new press (e.g. MAIN release momentarily reading as CANCEL or SET-).
 
-Valid names:
+This rewrite fixes it with two things working together:
 
-```text
-main
-res
-set
-cancel
-```
+1. Bands are narrower than the gaps between them (`ADC_xxx_MIN/MAX`), so a
+   sweep spends most of its transit in `UNKNOWN`, not in a neighboring
+   button's band.
+2. Once the lever state machine confirms a real button, it is **locked**:
+   no other value (including a genuinely different button) can become the
+   new confirmed state until the lever is confirmed back to `NONE`
+   (released). A sweep through another button's numeric band during release
+   is therefore invisible to the rest of the firmware -- see the state
+   diagram and comment in [`LeverState.cpp`](CruiseController/LeverState.cpp).
 
-`POST /api/config`:
-
-```json
-{
-  "pulseMs": 200,
-  "learned": {
-    "main": 0,
-    "cancel": 96,
-    "res": 153,
-    "set": 341
-  }
-}
-```
-
-`POST /api/learn`:
-
-```json
-{
-  "name": "main",
-  "adc": 0
-}
-```
-
-`GET /api/status` and WebSocket status:
-
-```json
-{
-  "adc": 4095,
-  "button": "NONE",
-  "pulseMs": 200,
-  "outputs": {
-    "main": false,
-    "res": false,
-    "set": false,
-    "brake": false
-  }
-}
-```
+This also fixes the old "second MAIN press needs a longer hold" bug: state
+resets to a clean, identical `NONE` every time, so every press is detected
+under exactly the same conditions regardless of what happened before it.
 
 ## Safety Logic
 
-- Startup sets `GPIO5`, `GPIO6`, `GPIO7`, and `GPIO9` to `OUTPUT` and immediately drives all LOW.
-- A new operation clears all outputs LOW before turning the requested output ON.
-- Only one output can be ON at a time.
-- Pulse output defaults to `200 ms`.
-- WebSocket broadcasts status every `500 ms`.
+- `setupOutputPins()` runs first in `setup()`, before serial/ADC/anything
+  else, and forces every vehicle line to its inactive level before it is
+  ever switched to `OUTPUT` mode -- no floating-pin glitch on boot.
+- Raw ADC must classify to the same band for `StateTiming::CONFIRM_MS`
+  before it is accepted as a candidate, and the candidate must further
+  clear the neutral lockout described above before it becomes the
+  confirmed state that actually drives outputs.
+- `UNKNOWN` and `NONE` both mean "drive nothing"; only a confirmed
+  MAIN/CANCEL/RES/SET turns an output on, and only one output is ever
+  energized at a time (`Outputs.cpp` clears all state before setting the
+  new one).
+- Once activated, an output stays on for at least `MIN_OUTPUT_ON_MS` so a
+  quick tap still produces a pulse long enough for the vehicle ECU to
+  register, then turns off as soon as the lever is confirmed released.
+- If `USE_BRAKE_INPUT` is enabled, a detected brake forces every output off
+  immediately and blocks new operations until both the brake clears *and*
+  the lever is independently confirmed back to `NONE`.
+
+## Not Yet Finalized
+
+Per the current hardware spec, these are placeholders in `Config.h` pending
+real measurements and circuit decisions:
+
+- `StateTiming::MAIN_LONG_PRESS_MS` and `CONFIRM_MS`.
+- GPIO9's final role (`USE_BRAKE_INPUT`) and, if used, brake polarity.
+- `OUTPUT_ACTIVE_LEVEL` (depends on the final analog-switch part).
+- Final analog-switch/PhotoMOS part numbers (74LVC2G66 / SN74HC4066 /
+  AQY210EHA under consideration).
