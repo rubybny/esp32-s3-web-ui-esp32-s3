@@ -51,19 +51,18 @@ String detectCruiseButton(int adc) {
     const Entry& entry = entries[i];
     if (entry.value <= 0 && String(entry.key) != "main") continue;
     if (entry.value >= 4095) continue;
-    if (String(entry.key) == "main") continue;
 
     int lower = 1;
     int upper = 4094;
 
     for (int j = static_cast<int>(i) - 1; j >= 0; j--) {
-      if (entries[j].value <= 0 || entries[j].value >= 4095) continue;
+      if (entries[j].value < 0 || entries[j].value >= 4095) continue;
       lower = ((entries[j].value + entry.value) / 2) + 1;
       break;
     }
 
     for (size_t j = i + 1; j < sizeof(entries) / sizeof(entries[0]); j++) {
-      if (entries[j].value <= 0 || entries[j].value >= 4095) continue;
+      if (entries[j].value < 0 || entries[j].value >= 4095) continue;
       upper = (entry.value + entries[j].value) / 2;
       break;
     }
