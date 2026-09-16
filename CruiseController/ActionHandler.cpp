@@ -26,6 +26,14 @@ uint32_t outputMinHoldUntil = 0;
 // immediately re-trigger an operation.
 bool brakeLockout = false;
 
+// A confirmed MAIN press fires a single fixed-width output pulse
+// (StateTiming::MAIN_PULSE_MS), independent of how long the lever itself
+// stays physically pressed: releasing early does not cut the pulse short,
+// and continuing to hold does not extend or repeat it -- exactly one pulse
+// per confirmed press.
+bool mainPulseActive = false;
+uint32_t mainPulseUntil = 0;
+
 void driveOutput(LeverButton button, uint32_t now) {
   if (button == activeOutput) return;
 
@@ -51,6 +59,8 @@ void setupActionHandler() {
   activeOutput = LeverButton::NONE;
   outputMinHoldUntil = 0;
   brakeLockout = false;
+  mainPulseActive = false;
+  mainPulseUntil = 0;
 }
 
 void handleLeverAction(uint32_t now) {
@@ -79,5 +89,28 @@ void handleLeverAction(uint32_t now) {
   }
 #endif
 
-  driveOutput(leverState, now);
+  if (leverStateJustChanged() && leverState == LeverButton::MAIN) {
+    mainPulseActive = true;
+    mainPulseUntil = now + StateTiming::MAIN_PULSE_MS;
+  }
+  if (mainPulseActive && elapsed(now, mainPulseUntil)) {
+    mainPulseActive = false;
+  }
+
+  // While the MAIN pulse is running, it alone decides the output -- even if
+  // the lever has already been released (confirmed back to NONE) or is still
+  // held past the pulse window. Once the pulse ends, MAIN drives nothing
+  // again until the lever returns to NONE and a fresh press re-triggers it
+  // (LeverState's neutral lockout already guarantees leverState cannot jump
+  // straight from MAIN to another real button without passing through NONE).
+  LeverButton outputTarget;
+  if (mainPulseActive) {
+    outputTarget = LeverButton::MAIN;
+  } else if (leverState == LeverButton::MAIN) {
+    outputTarget = LeverButton::NONE;
+  } else {
+    outputTarget = leverState;
+  }
+
+  driveOutput(outputTarget, now);
 }

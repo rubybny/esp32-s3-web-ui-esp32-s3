@@ -144,11 +144,11 @@ constexpr uint32_t CONFIRM_MS = 25;
 // pulse long enough for the vehicle ECU to register it.
 constexpr uint32_t MIN_OUTPUT_ON_MS = 120;
 
-// How long MAIN must be continuously held before it is reported as a long
-// press (see LeverState::isMainLongPress()). Not wired to different output
-// behavior yet -- exact use is still undecided -- but the detection and the
-// constant exist so that behavior can be added later without restructuring.
-constexpr uint32_t MAIN_LONG_PRESS_MS = 800;
+// A single confirmed MAIN press drives the MAIN output for exactly this
+// long, as a fixed-width pulse -- not "at least" like MIN_OUTPUT_ON_MS, and
+// independent of how long the lever itself is physically held or released
+// during that window. See ActionHandler.cpp.
+constexpr uint32_t MAIN_PULSE_MS = 2000;
 }  // namespace StateTiming
 
 // ===== Brake input (only meaningful if USE_BRAKE_INPUT is 1) ================

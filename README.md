@@ -107,8 +107,10 @@ Everything is in [`Config.h`](CruiseController/Config.h):
   becoming the confirmed lever state.
 - `StateTiming::MIN_OUTPUT_ON_MS` -- minimum time an output stays driven
   once activated.
-- `StateTiming::MAIN_LONG_PRESS_MS` -- how long MAIN must be held to report
-  a long press (detection only; not wired to different behavior yet).
+- `StateTiming::MAIN_PULSE_MS` -- a confirmed MAIN press drives the MAIN
+  output for exactly this long (default 2000ms) as a single fixed-width
+  pulse, regardless of how long the lever itself stays pressed or when it is
+  released during that window -- see `ActionHandler.cpp`.
 - `OUTPUT_ACTIVE_LEVEL` -- `ACTIVE_HIGH` or `ACTIVE_LOW` for the vehicle
   output lines, depending on the final analog-switch/PhotoMOS wiring.
 - `USE_BRAKE_INPUT` -- `0` makes GPIO9 the CANCEL output (current
@@ -226,7 +228,8 @@ under exactly the same conditions regardless of what happened before it.
 Per the current hardware spec, these are placeholders in `Config.h` pending
 real measurements and circuit decisions:
 
-- `StateTiming::MAIN_LONG_PRESS_MS` and `CONFIRM_MS`.
+- `StateTiming::MAIN_PULSE_MS` (set to 2000ms from memory, not yet measured
+  against the real vehicle behavior) and `CONFIRM_MS`.
 - GPIO9's final role (`USE_BRAKE_INPUT`) and, if used, brake polarity.
 - `OUTPUT_ACTIVE_LEVEL` (depends on the final analog-switch part).
 - Final analog-switch/PhotoMOS part numbers (74LVC2G66 / SN74HC4066 /

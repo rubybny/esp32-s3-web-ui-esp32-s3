@@ -25,8 +25,3 @@ bool leverStateJustChanged();
 
 // How long (ms) the current confirmed state has been held.
 uint32_t getLeverStateHoldMs(uint32_t now);
-
-// True once MAIN has been continuously held for
-// StateTiming::MAIN_LONG_PRESS_MS, latched until MAIN is released (does not
-// re-fire every loop while held).
-bool isMainLongPress();

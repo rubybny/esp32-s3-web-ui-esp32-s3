@@ -29,8 +29,6 @@ bool stateChangedThisTick = false;
 // except NONE -- see the long comment in updateLeverState() for why this is
 // the fix for the MAIN-release misread bug.
 bool lockedOut = false;
-
-bool mainLongPressLatched = false;
 }  // namespace
 
 void setupLeverState() {
@@ -38,7 +36,6 @@ void setupLeverState() {
   confirmedState = LeverButton::NONE;
   previousState = LeverButton::NONE;
   lockedOut = false;
-  mainLongPressLatched = false;
 }
 
 LeverButton detectLeverState(int filteredAdc, LeverButton confirmed) {
@@ -112,8 +109,6 @@ void updateLeverState(uint32_t now) {
   stateChangedThisTick = true;
   lockedOut = (confirmedState != LeverButton::NONE);
 
-  if (confirmedState != LeverButton::MAIN) mainLongPressLatched = false;
-
   logf("STATE %s -> %s (adc=%d filtered)", leverButtonName(previousState), leverButtonName(confirmedState),
        filterAdc());
 }
@@ -124,12 +119,3 @@ LeverButton getCandidateLeverState() { return candidateState; }
 bool leverStateJustChanged() { return stateChangedThisTick; }
 
 uint32_t getLeverStateHoldMs(uint32_t now) { return now - confirmedSince; }
-
-bool isMainLongPress() {
-  if (confirmedState != LeverButton::MAIN) return false;
-  if (!mainLongPressLatched && getLeverStateHoldMs(millis()) >= StateTiming::MAIN_LONG_PRESS_MS) {
-    mainLongPressLatched = true;
-    logLine("MAIN long press threshold reached");
-  }
-  return mainLongPressLatched;
-}
